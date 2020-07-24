@@ -9,6 +9,7 @@ router = DefaultRouter()
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("request-verification/", views.request_send_verify_sms, name='request verification'),
-    path("verify-phone/", views.verify_mobile_number, name='verify phone'),
+    path("request-verification/", views.RequestVerificationCodeAPIView.as_view(), name='request verification'),
+    path("verify-phone/" , views.VerifyMobileNumberAPIView.as_view(), name='verify phone'),
+    path('register-user/', views.CreateUserAPIView.as_view(), name='register user'),
 ]

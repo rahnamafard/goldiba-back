@@ -2,6 +2,8 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
+from django.http import JsonResponse
+
 
 
 class UserManager(BaseUserManager):
@@ -9,19 +11,26 @@ class UserManager(BaseUserManager):
 
     def create_user(self, mobile, password=None, is_staff=False, is_active=True, is_admin=False):
         if not mobile:
-            raise ValueError('Users must have a phone number.')
+            raise ValueError('Users must have a mobile number.')
 
-        user_obj = self.model(
-            mobile=mobile,
-        )
-        user_obj.set_password(password)
-        user_obj.staff = is_staff
-        user_obj.is_active = is_active
-        user_obj.is_admin = is_admin
-        user_obj.email_subscribtion = False
-        user_obj.sms_subscription = False
-        user_obj.save(using=self._db)
-        return user_obj
+        try:
+            User.objects.get(mobiel=mobile)
+            return JsonResponse({
+                'type': 'error',
+                'message': 'کاربری با این شماره قبلا ثبت شده.'
+            }, status=406)
+        except User.DoesNotExist:
+            user_obj = self.model(
+                mobile=mobile,
+            )
+            user_obj.set_password(password)
+            user_obj.staff = is_staff
+            user_obj.is_active = is_active
+            user_obj.is_admin = is_admin
+            user_obj.email_subscription = False
+            user_obj.sms_subscription = False
+            user_obj.save(using=self._db)
+            return user_obj
 
     def create_superuser(self, mobile, password=None, email=None):
         user = self.create_user(
@@ -62,8 +71,8 @@ class User(AbstractUser):
         ('O', 'Other')
     ]
 
-    email_subscribtion = models.BooleanField(verbose_name='Email Newsletter')
-    sms_subscription = models.BooleanField(verbose_name='SMS Newsletter')
+    email_subscription = models.BooleanField(verbose_name='Email Newsletter', blank=True, null=True)
+    sms_subscription = models.BooleanField(verbose_name='SMS Newsletter', blank=True, null=True)
 
     # TODO addresses (NEW many to many relation)
     # phone = models.CharField(max_length=15, verbose_name='Reciever Phone Name')
