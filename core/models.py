@@ -1,9 +1,7 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
 from django.http import JsonResponse
-
 
 
 class UserManager(BaseUserManager):
@@ -14,7 +12,7 @@ class UserManager(BaseUserManager):
             raise ValueError('Users must have a mobile number.')
 
         try:
-            User.objects.get(mobiel=mobile)
+            User.objects.get(mobile=mobile)
             return JsonResponse({
                 'type': 'error',
                 'message': 'کاربری با این شماره قبلا ثبت شده.'
