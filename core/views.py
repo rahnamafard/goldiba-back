@@ -1,13 +1,15 @@
 from django.http import JsonResponse
-from rest_framework import status
+from rest_framework import status, generics
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.utils import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
 
 from core.models import User
+from core.serializers import UserProfileSerializer
 from . import serializers
 
 import logging
@@ -159,6 +161,8 @@ class CreateUserAPIView(APIView):
             new_user.sms_subscription = 0
             new_user.save()
 
+            Token.objects.create(user=new_user)
+
             return Response({
                 "type": "ok",
                 "message": "ثبت نام انجام شد."
@@ -170,12 +174,6 @@ class CreateUserAPIView(APIView):
                 'type': 'error',
                 'status': 'خطا از سمت سرور.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class LogoutAPIVIew(APIView):
-    @staticmethod
-    def get(req):
-        return Response({}, status=status.HTTP_200_OK)
 
 
 class RequestResetPasswordCodeAPIView(APIView):
@@ -224,7 +222,6 @@ class RequestResetPasswordCodeAPIView(APIView):
                     'type': 'ok',
                     'message': 'کد تایید پیامک شد.'
                 }, status=status.HTTP_200_OK)
-
 
         except Exception as e:
             logger.error(e)
@@ -322,19 +319,57 @@ class ResetPasswordAPIView(APIView):
             logger.error(e)
             return Response({
                 'type': 'error',
-                'status': 'خطا از سمت سرور.'
+                'message': 'خطا از سمت سرور.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# Override simple-jwt serializer (modifying default error messages)
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def update(self, instance, validated_data):
-        pass
+# Note:
+# If you use TokenAuthentication in production
+# you must ensure that your API is only available over https.
+class LoginAPIView(APIView):
+    @staticmethod
+    def post(req):
+        try:
+            json_body = json.loads(req.body)
 
-    default_error_messages = {
-        'no_active_account': 'اطلاعات ورود اشتباه است.'
-    }
-    
-    
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+            try:
+                user = User.objects.get(mobile=json_body['mobile'])
+            except Exception as e:
+                return Response({
+                    "type": "error",
+                    "message": "کاربر وجود ندارد."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                token = Token.objects.get(user_id=user.user_id)
+            except Exception as e:
+                token = Token.objects.create(user=user)
+
+            return Response({
+                "type": "ok",
+                "message": "ورود موفقیت آمیز.",
+                "token": token.key
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "type": "error",
+                "message": "اطلاعات ورود اشتباه است."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutAPIVIew(APIView):
+    @staticmethod
+    def get(req):
+        return Response({}, status=status.HTTP_200_OK)
+
+
+class UserMetaDataAPIVIew(generics.RetrieveUpdateAPIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserProfileSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        serialized_user = UserProfileSerializer(user).data
+        return Response({'user': serialized_user})

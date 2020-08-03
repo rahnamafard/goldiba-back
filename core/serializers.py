@@ -1,8 +1,6 @@
 from rest_framework import serializers, status
-from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 from .models import *
-
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -28,3 +26,11 @@ class CreateUserSerializer(serializers.Serializer):
 class ChangePasswordSerializer(serializers.Serializer):
     mobile = serializers.CharField(max_length=11, allow_blank=False, allow_null=False, required=True)
     password = serializers.CharField(max_length=255, allow_blank=False, allow_null=False, required=False)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.mobile')
+
+    class Meta:
+        model = User
+        fields = ('user_id', 'first_name', 'last_name', 'mobile', 'user')

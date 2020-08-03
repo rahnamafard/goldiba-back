@@ -19,9 +19,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',               # rest framework
-    'corsheaders',                  # cors
-    'core'                          # api core app
+    'rest_framework',
+    'rest_framework.authtoken',     # token authentication
+    'corsheaders',                  # cors headers
+    'core'                          # core app
 ]
 
 MIDDLEWARE = [
@@ -78,19 +79,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # TODO configure
 
 # Authentication Settings
 AUTH_USER_MODEL = 'core.User'
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=3),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    'USER_ID_FIELD': 'user_id',
-}
-
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
-#     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-#     "TEST_REQUEST_DEFAULT_FORMAT": "json",
-#     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.DjangoModelPermissions",),
-# }
 
 # Log Settings
 LOGGING = {
