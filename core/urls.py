@@ -23,4 +23,7 @@ urlpatterns = [
     # User Info
     path('auth/user/', views.UserMetaDataAPIVIew.as_view(), name='user meta data'),
 
+    # Product
+    path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info")
+
 ]

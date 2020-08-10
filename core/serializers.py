@@ -33,4 +33,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('user_id', 'first_name', 'last_name', 'mobile', 'user')
+        fields = ('user_id', 'first_name', 'last_name', 'mobile', 'is_staff', 'is_superuser', 'user')
+
+
+class StatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Status
+        fields = '__all__'
+
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = '__all__'

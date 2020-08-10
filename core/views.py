@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
-from core.models import User
-from core.serializers import UserProfileSerializer
+from core.models import *
+from core.serializers import *
 from . import serializers
 
 import logging
@@ -20,7 +20,8 @@ import requests
 logger = logging.getLogger(__name__)
 register_user_redis = redis.StrictRedis()
 reset_pass_redis = redis.StrictRedis()
-sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D'
+# sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
+sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D' # nourifatemeh441@gmail.com
 sms_api_url = "https://api.kavenegar.com/v1/{}/verify/lookup.json".format(sms_api_key)
 
 
@@ -103,7 +104,7 @@ class VerifyMobileNumberAPIView(APIView):
 
             # Check Verification key
             if register_user_redis.exists(mobile):
-                expected_verification_key = register_user_redis.get(mobile).decode("utf-8")  # byto to string
+                expected_verification_key = register_user_redis.get(mobile).decode("utf-8")  # byte to string
 
                 # It is not equal
                 if expected_verification_key != actual_verification_key:
@@ -373,3 +374,27 @@ class UserMetaDataAPIVIew(generics.RetrieveUpdateAPIView):
         user = request.user
         serialized_user = UserProfileSerializer(user).data
         return Response({'user': serialized_user})
+
+
+class NewProductFormInfoAPIView(APIView):
+    @staticmethod
+    def get(req):
+        try:
+            statuses = Status.objects.all()
+            status_serializer = StatusSerializer(statuses, many=True)
+
+            brands = Brand.objects.all()
+            brand_serializer = BrandSerializer(brands, many=True)
+            return Response({
+                "type": "ok",
+                "body": {
+                    "statuses": status_serializer.data,
+                    "brands": brand_serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "type": "error",
+                "message": "خطا در ارتباط با پایگاه داده."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
