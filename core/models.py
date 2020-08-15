@@ -9,6 +9,18 @@ from rest_framework.fields import JSONField
 from api import settings
 
 
+def get_upload_path_brands(instance, filename):
+    return os.path.join(settings.MEDIA_ROOT, 'images/brands/', instance.name, filename)
+
+
+def get_upload_path_products(instance, filename):
+    return os.path.join(settings.MEDIA_ROOT, 'images/products/', instance.code, filename)
+
+
+def get_upload_path_models(instance, filename):
+    return os.path.join(settings.MEDIA_ROOT, 'images/products/', instance.product.product_id.__str__(), instance.code, filename)
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -119,10 +131,6 @@ class Gift(models.Model):
         return self.title
 
 
-def get_upload_path_brands(instance, filename):
-    return os.path.join(settings.MEDIA_ROOT, 'images/brands/', instance.name, filename)
-
-
 class Brand(models.Model):
     brand_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, verbose_name='Persian Name', blank=False, null=False)
@@ -135,7 +143,7 @@ class Brand(models.Model):
 
 class Status(models.Model):
     status_id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=255, verbose_name='Status Title', blank=False, null=False)
+    label = models.CharField(max_length=255, verbose_name='Status Title', blank=False, null=False, default='')
 
     class Meta:
         verbose_name_plural = "Statuses"
@@ -148,22 +156,22 @@ class Product(models.Model):
     product_id = models.AutoField(primary_key=True)
 
     title = models.CharField(max_length=255, verbose_name='Title', blank=False, null=False)
-    description = models.TextField(verbose_name='Description', blank=True, null=True)
-    code = models.CharField(max_length=32, verbose_name='Product Code', blank=False, null=False)
-    discount = models.PositiveSmallIntegerField(verbose_name='Product Discount', blank=False, null=False)
+    description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=32, verbose_name='Product Code', blank=False, null=False, unique=True)
+    discount = models.PositiveSmallIntegerField(verbose_name='Product Discount', default=0)
     free_send = models.BooleanField(verbose_name='Free Send', blank=False, null=False)
-    main_image = models.ImageField(upload_to='images/product/'+product_id.__str__()+'/', blank=False, null=False)
-    second_image = models.ImageField(upload_to='images/product/'+product_id.__str__()+'/', blank=True, null=True)
-    size_image = models.ImageField(upload_to='images/product/'+product_id.__str__()+'/', blank=True, null=True)
+    main_image = models.ImageField(upload_to=get_upload_path_products, blank=False, null=False)
+    second_image = models.ImageField(upload_to=get_upload_path_products, blank=True, null=True)
+    size_image = models.ImageField(upload_to=get_upload_path_products, blank=True, null=True)
 
     params = JSONField("Parameters", default={})  # Product parameters
-    relatives = JSONField("Parameters", default={})  # Relative Products
+    relatives = JSONField("Relative Products", default={})  # Relative Products
 
-    likes = models.PositiveIntegerField(verbose_name='Product Like Count', blank=False, null=False)
+    likes = models.PositiveIntegerField(verbose_name='Product Like Count', blank=False, null=False, default=0)
 
-    # One-to-many relations
+    # Many-to-one relations
     brand = models.ForeignKey(Brand, related_name='products', on_delete=models.SET_NULL, blank=True, null=True)
-    status = models.ForeignKey(Status, related_name='products', on_delete=models.PROTECT, blank=True)
+    status = models.ForeignKey(Status, related_name='products', on_delete=models.PROTECT, blank=True, null=True)
 
     # Many-to-many relations
     tags = models.ManyToManyField('Tag', related_name='products', blank=True)
@@ -231,17 +239,21 @@ class Color(models.Model):
     name = models.CharField(max_length=255, verbose_name='Color Name', blank=False, null=False)
     hex = models.CharField(max_length=32, verbose_name='HEX Code', blank=False, null=False)
 
+    def __str__(self):
+        return self.name
+
 
 class Model(models.Model):
     model_id = models.AutoField(primary_key=True)
     product = models.ForeignKey(Product, related_name='models', on_delete=models.CASCADE)
-    color = models.ForeignKey(Color, related_name='models', on_delete=models.PROTECT)
-    code = models.CharField(max_length=32, verbose_name='Model Code', blank=False, null=False)
+    color = models.ForeignKey(Color, related_name='models', blank=True, null=True, on_delete=models.PROTECT)
+    code = models.CharField(max_length=32, verbose_name='Model Code', blank=True, null=True)
     title = models.CharField(max_length=255, verbose_name='Model Name', blank=False, null=False)
     description = models.TextField(verbose_name='Description', blank=True, null=True)
     price = models.PositiveIntegerField(verbose_name='Price', blank=False, null=False)
-    in_stock = models.PositiveSmallIntegerField(verbose_name='# In Stock', blank=False, null=False)
-    image = models.ImageField(upload_to='images/model/'+model_id.__str__()+'/', blank=False, null=False)
-    is_active = models.BooleanField(verbose_name='Activation Status', blank=True, null=True)
+    in_stock = models.PositiveSmallIntegerField(verbose_name='# In Stock', blank=False, null=False, default=0)
+    image = models.ImageField(upload_to=get_upload_path_models, blank=False, null=False)
+    is_active = models.BooleanField(verbose_name='Activation Status', blank=True, null=True, default=1)
 
-
+    def __str__(self):
+        return self.title

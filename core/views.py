@@ -1,7 +1,8 @@
 from django.http import JsonResponse
-from rest_framework import status, generics
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status, generics, mixins
+from rest_framework.generics import get_object_or_404
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.utils import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -44,7 +45,8 @@ class RequestVerificationCodeAPIView(APIView):
 
             # Send Verification Code Via SMS for User
             sms_response = requests.get(sms_api_url, {
-                "receptor": "09303267032",
+                # "receptor": "09303267032",
+                "receptor": mobile,
                 "token": verify_key,
                 "template": "goldibaverify",
             })
@@ -377,6 +379,9 @@ class UserMetaDataAPIVIew(generics.RetrieveUpdateAPIView):
 
 
 class NewProductFormInfoAPIView(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
     @staticmethod
     def get(req):
         try:
@@ -385,11 +390,20 @@ class NewProductFormInfoAPIView(APIView):
 
             brands = Brand.objects.all()
             brand_serializer = BrandSerializer(brands, many=True)
+
+            tags = Tag.objects.all()
+            tag_serializer = TagSerializer(tags, many=True)
+
+            colors = Color.objects.all()
+            color_serializer = ColorSerializer(colors, many=True)
+
             return Response({
                 "type": "ok",
                 "body": {
                     "statuses": status_serializer.data,
-                    "brands": brand_serializer.data
+                    "brands": brand_serializer.data,
+                    "tags": tag_serializer.data,
+                    "colors": color_serializer.data,
                 }
             }, status=status.HTTP_200_OK)
 
@@ -398,3 +412,169 @@ class NewProductFormInfoAPIView(APIView):
                 "type": "error",
                 "message": "خطا در ارتباط با پایگاه داده."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# POSSIBLY NOT CORRECT, SO CHECK IT
+class CreateTagIfNotExists(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    @staticmethod
+    def post(req):
+        try:
+            json_tags = json.loads(req.body)
+
+            new_tags = []
+            for tag in json_tags:
+                print(tag)
+                new_tag = Tag.objects.get_or_create(tag)
+                new_tags.append(new_tag)
+
+            return Response({
+                "type": "ok",
+                "tags": new_tags
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                "type": "error",
+                "message": "خطا از سمت سرور."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def is_json(json_data):
+    try:
+        real_json=json.loads(json_data)
+        is_valid=True
+    except ValueError:
+        is_valid=False
+    return is_valid
+
+
+class ProductAPIView(
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.ListAPIView
+):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = Product.objects.all()
+    # parser_classes = [MultiPartParser]
+
+    # Change serializer upon request method -> (self.request.method == "GET")
+    def get_serializer_class(self):
+        return ProductSerializer
+
+    # Get object by id
+    def get_object(self):
+        request = self.request
+        passed_id = request.GET.get('id', None) or self.passed_id
+        queryset = self.queryset
+        obj = None
+        if passed_id is not None:
+            obj = get_object_or_404(queryset, product_id=passed_id)
+            self.check_object_permissions(request, obj)
+        return obj
+
+    # Get object
+    def get(self, request, *args, **kwargs):
+        url_passed_id = request.GET.get('id')
+
+        json_data = {}
+        body_ = request.body
+
+        if is_json(body_):
+            json_data = json.loads(request.body)
+
+        new_passed_id = json_data.get('id', None)
+
+        passed_id = url_passed_id or new_passed_id or None
+        # self.passed_id = passed_id
+
+        if passed_id is not None:
+            return self.retrieve(request, *args, **kwargs)
+
+        return super().get(request, *args, **kwargs)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # create a new object
+    # def put(self, request, *args, **kwargs):
+    #     return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class ModelAPIView(
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.ListAPIView
+):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    queryset = Model.objects.all()
+    # parser_classes = [MultiPartParser]
+
+    # Change serializer upon request method -> (self.request.method == "GET")
+    def get_serializer_class(self):
+        return ModelSerializer
+
+    # Get object by id
+    def get_object(self):
+        request = self.request
+        passed_id = request.GET.get('id', None) or self.passed_id
+        queryset = self.queryset
+        obj = None
+        if passed_id is not None:
+            obj = get_object_or_404(queryset, product_id=passed_id)
+            self.check_object_permissions(request, obj)
+        return obj
+
+    # Get object
+    def get(self, request, *args, **kwargs):
+        url_passed_id = request.GET.get('id')
+
+        json_data = {}
+        body_ = request.body
+
+        if is_json(body_):
+            json_data = json.loads(request.body)
+
+        new_passed_id = json_data.get('id', None)
+
+        passed_id = url_passed_id or new_passed_id or None
+        # self.passed_id = passed_id
+
+        if passed_id is not None:
+            return self.retrieve(request, *args, **kwargs)
+
+        return super().get(request, *args, **kwargs)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # create a new object
+    # def put(self, request, *args, **kwargs):
+    #     return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)

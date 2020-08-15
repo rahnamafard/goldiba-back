@@ -24,6 +24,12 @@ urlpatterns = [
     path('auth/user/', views.UserMetaDataAPIVIew.as_view(), name='user meta data'),
 
     # Product
-    path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info")
+    path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info"),
+    path('product/', views.ProductAPIView.as_view(), name="create new product"),
 
+    # Tag
+    # path('tag/create-if-not-exists/', views.CreateTagIfNotExists.as_view(), name="create tag if not exists"),
+
+    # Model
+    path('product/model/', views.ModelAPIView.as_view(), name="new models creation")
 ]
