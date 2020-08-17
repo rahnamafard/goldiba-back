@@ -1,5 +1,6 @@
 from rest_framework import serializers, status
 
+from core.utils import unique_order_id_generator
 from .models import *
 
 
@@ -157,6 +158,48 @@ class ModelSerializer(serializers.ModelSerializer):
         }
 
 
+class ModelOfOrderSerializer(serializers.ModelSerializer):
+    image = Base64ImageField(max_length=None, use_url=True)
+
+    class Meta:
+        model = Model
+        # fields = '__all__'
+        exclude = [
+            'product',
+            # 'image',
+        ]
+        extra_kwargs = {
+            "title": {
+                "error_messages": {
+                        "blank": "عنوان مدل را وارد نمایید.",
+                        "null": "عنوان مدل را وارد نمایید."
+                     }
+            },
+            "code": {
+                "error_messages": {
+                        "unique": "مدلی با این کد مدل قبلا ثبت شده.",
+                        "blank": "کد مدل را وارد نمایید.",
+                        "null": "کد مدل را وارد نمایید."
+                     }
+            },
+            "price": {
+                "error_messages": {
+                    "required": "لطفا قیمت مدل را وارد کنید.",
+                    "invalid": "قیمت وارد شده درست نیست."
+                }
+            },
+            "image": {
+                "error_messages": {
+                    "required": "تصویر مدل از قلم افتاده.",
+                    "missing": "تصویر مدل از قلم افتاده.",
+                    "invalid": "تصویر مدل معتبر نیست.",
+                    "invalid_image": "تصویر مدل معتبر نیست.",
+                    "empty": "فایل تصویر مدل خالی است.",
+                }
+            },
+        }
+
+
 class ProductSerializer(serializers.ModelSerializer):
     models = ModelSerializer(many=True)
 
@@ -223,3 +266,21 @@ class ProductSerializer(serializers.ModelSerializer):
 
         model_serializer.create(model_validated_data)
         return product
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    models = serializers.PrimaryKeyRelatedField(many=True, queryset=Model.objects.all())
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+        # exclude = ('tracking_code',)
+
+    def create(self, validated_data):
+        validated_data.pop('tracking_code')  # use default
+        rec_models = validated_data.pop('models')
+        order = Order.objects.create(**validated_data)
+        order.tracking_code = uuid.uuid4().hex[:8].upper()
+        order.save()
+        order.models.set(rec_models)
+        return order

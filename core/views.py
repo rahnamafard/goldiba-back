@@ -459,8 +459,8 @@ class ProductAPIView(
                     mixins.DestroyModelMixin,
                     generics.ListAPIView
 ):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
     queryset = Product.objects.all()
     # parser_classes = [MultiPartParser]
 
@@ -531,6 +531,134 @@ class ModelAPIView(
     # Change serializer upon request method -> (self.request.method == "GET")
     def get_serializer_class(self):
         return ModelSerializer
+
+    # Get object by id
+    def get_object(self):
+        request = self.request
+        passed_id = request.GET.get('id', None) or self.passed_id
+        queryset = self.queryset
+        obj = None
+        if passed_id is not None:
+            obj = get_object_or_404(queryset, product_id=passed_id)
+            self.check_object_permissions(request, obj)
+        return obj
+
+    # Get object
+    def get(self, request, *args, **kwargs):
+        url_passed_id = request.GET.get('id')
+
+        json_data = {}
+        body_ = request.body
+
+        if is_json(body_):
+            json_data = json.loads(request.body)
+
+        new_passed_id = json_data.get('id', None)
+
+        passed_id = url_passed_id or new_passed_id or None
+        # self.passed_id = passed_id
+
+        if passed_id is not None:
+            return self.retrieve(request, *args, **kwargs)
+
+        return super().get(request, *args, **kwargs)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # create a new object
+    # def put(self, request, *args, **kwargs):
+    #     return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class ColorAPIView(
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.ListAPIView
+):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    queryset = Color.objects.all()
+    # parser_classes = [MultiPartParser]
+
+    # Change serializer upon request method -> (self.request.method == "GET")
+    def get_serializer_class(self):
+        return ColorSerializer
+
+    # Get object by id
+    def get_object(self):
+        request = self.request
+        passed_id = request.GET.get('id', None) or self.passed_id
+        queryset = self.queryset
+        obj = None
+        if passed_id is not None:
+            obj = get_object_or_404(queryset, product_id=passed_id)
+            self.check_object_permissions(request, obj)
+        return obj
+
+    # Get object
+    def get(self, request, *args, **kwargs):
+        url_passed_id = request.GET.get('id')
+
+        json_data = {}
+        body_ = request.body
+
+        if is_json(body_):
+            json_data = json.loads(request.body)
+
+        new_passed_id = json_data.get('id', None)
+
+        passed_id = url_passed_id or new_passed_id or None
+        # self.passed_id = passed_id
+
+        if passed_id is not None:
+            return self.retrieve(request, *args, **kwargs)
+
+        return super().get(request, *args, **kwargs)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # create a new object
+    # def put(self, request, *args, **kwargs):
+    #     return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class OrderAPIView(
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.ListAPIView
+):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
+    # parser_classes = [MultiPartParser]
+
+    # Change serializer upon request method -> (self.request.method == "GET")
+    def get_serializer_class(self):
+        return OrderSerializer
 
     # Get object by id
     def get_object(self):

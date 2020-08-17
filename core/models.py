@@ -1,4 +1,5 @@
 import os
+import uuid
 
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
@@ -257,3 +258,36 @@ class Model(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Order(models.Model):
+    order_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, related_name='orders', null=True, on_delete=models.SET_NULL)  # if user deleted, order becomes null
+
+    ORDER_STATUS_CHOICES = [
+        ('BP', 'Before Payment'),
+        ('AP', 'After Payment'),
+    ]
+
+    parameter_type = models.CharField(
+        max_length=2,
+        choices=ORDER_STATUS_CHOICES,
+        default='BP',
+    )
+
+    # payment_id
+    # package_id
+
+    tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code', unique=True)
+
+    phone = models.CharField(max_length=15, verbose_name='Receiver Phone Name')
+    postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')
+    postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
+    datetime = models.DateTimeField(auto_now=True)
+
+    total_price = models.PositiveIntegerField(verbose_name='Total Price')
+
+    models = models.ManyToManyField('Model', related_name='orders')
+
+    def __str__(self):
+        return self.tracking_code

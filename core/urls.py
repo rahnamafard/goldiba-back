@@ -14,7 +14,6 @@ urlpatterns = [
     path("verify-phone/" , views.VerifyMobileNumberAPIView.as_view(), name='verify phone'),
     path('register-user/', views.CreateUserAPIView.as_view(), name='register user'),
 
-
     # Reset Password
     path('user/request-reset-password-code/', views.RequestResetPasswordCodeAPIView.as_view(), name='request reset pass'),
     path('user/verify-reset-password-code/', views.VerifyResetPasswordCodeAPIView.as_view(), name='verify reset pass'),
@@ -25,11 +24,17 @@ urlpatterns = [
 
     # Product
     path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info"),
-    path('product/', views.ProductAPIView.as_view(), name="create new product"),
+    path('product/', views.ProductAPIView.as_view(), name="product api"),
 
     # Tag
     # path('tag/create-if-not-exists/', views.CreateTagIfNotExists.as_view(), name="create tag if not exists"),
 
     # Model
-    path('product/model/', views.ModelAPIView.as_view(), name="new models creation")
+    path('product/model/', views.ModelAPIView.as_view(), name="model api"),
+
+    # Color
+    path('color/', views.ColorAPIView.as_view(), name="color api"),
+
+    # Order
+    path('order/', views.OrderAPIView.as_view(), name="order api")
 ]
