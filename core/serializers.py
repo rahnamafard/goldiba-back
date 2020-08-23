@@ -158,48 +158,6 @@ class ModelSerializer(serializers.ModelSerializer):
         }
 
 
-class ModelOfOrderSerializer(serializers.ModelSerializer):
-    image = Base64ImageField(max_length=None, use_url=True)
-
-    class Meta:
-        model = Model
-        # fields = '__all__'
-        exclude = [
-            'product',
-            # 'image',
-        ]
-        extra_kwargs = {
-            "title": {
-                "error_messages": {
-                        "blank": "عنوان مدل را وارد نمایید.",
-                        "null": "عنوان مدل را وارد نمایید."
-                     }
-            },
-            "code": {
-                "error_messages": {
-                        "unique": "مدلی با این کد مدل قبلا ثبت شده.",
-                        "blank": "کد مدل را وارد نمایید.",
-                        "null": "کد مدل را وارد نمایید."
-                     }
-            },
-            "price": {
-                "error_messages": {
-                    "required": "لطفا قیمت مدل را وارد کنید.",
-                    "invalid": "قیمت وارد شده درست نیست."
-                }
-            },
-            "image": {
-                "error_messages": {
-                    "required": "تصویر مدل از قلم افتاده.",
-                    "missing": "تصویر مدل از قلم افتاده.",
-                    "invalid": "تصویر مدل معتبر نیست.",
-                    "invalid_image": "تصویر مدل معتبر نیست.",
-                    "empty": "فایل تصویر مدل خالی است.",
-                }
-            },
-        }
-
-
 class ProductSerializer(serializers.ModelSerializer):
     models = ModelSerializer(many=True)
 
@@ -274,7 +232,6 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = '__all__'
-        # exclude = ('tracking_code',)
 
     def create(self, validated_data):
         validated_data.pop('tracking_code')  # use default

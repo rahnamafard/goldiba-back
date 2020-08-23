@@ -74,11 +74,17 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-MEDIA_URL = '/media/'                        # TODO configure
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # TODO configure
+MEDIA_URL = '/media/'                         # TODO configure
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
 
 # Authentication Settings
 AUTH_USER_MODEL = 'core.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
 
 # Log Settings
 LOGGING = {

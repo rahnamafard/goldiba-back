@@ -1,15 +1,13 @@
-from django.http import JsonResponse
-from rest_framework import status, generics, mixins
+from rest_framework import generics, mixins
 from rest_framework.generics import get_object_or_404
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, IsAdminUser
 from rest_framework.utils import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.contrib.auth import authenticate
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
-from core.models import *
 from core.serializers import *
 from . import serializers
 
@@ -24,6 +22,15 @@ reset_pass_redis = redis.StrictRedis()
 # sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
 sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D' # nourifatemeh441@gmail.com
 sms_api_url = "https://api.kavenegar.com/v1/{}/verify/lookup.json".format(sms_api_key)
+
+
+def is_json(json_data):
+    try:
+        real_json=json.loads(json_data)
+        is_valid=True
+    except ValueError:
+        is_valid=False
+    return is_valid
 
 
 class RequestVerificationCodeAPIView(APIView):
@@ -45,8 +52,8 @@ class RequestVerificationCodeAPIView(APIView):
 
             # Send Verification Code Via SMS for User
             sms_response = requests.get(sms_api_url, {
-                # "receptor": "09303267032",
-                "receptor": mobile,
+                "receptor": "09303267032",
+                # "receptor": mobile,
                 "token": verify_key,
                 "template": "goldibaverify",
             })
@@ -191,7 +198,8 @@ class RequestResetPasswordCodeAPIView(APIView):
 
             # Send Verification Code Via SMS for User
             sms_response = requests.get(sms_api_url, {
-                "receptor": mobile,
+                # "receptor": mobile,
+                "receptor": "09303267032",
                 "token": verify_key,
                 "template": "goldibaverify",
             })
@@ -335,30 +343,31 @@ class LoginAPIView(APIView):
         try:
             json_body = json.loads(req.body)
 
-            try:
-                user = User.objects.get(mobile=json_body['mobile'])
-            except Exception as e:
+            user = authenticate(mobile=json_body['mobile'], password=json_body['password'])
+            if user is not None:
+                try:
+                    token = Token.objects.get(user_id=user.user_id)
+                except Exception as e:
+                    token = Token.objects.create(user=user)
+
+                return Response({
+                    "type": "ok",
+                    "message": "ورود موفقیت آمیز.",
+                    "token": token.key,
+                }, status=status.HTTP_200_OK)
+
+            else:
                 return Response({
                     "type": "error",
-                    "message": "کاربر وجود ندارد."
+                    "message": "اطلاعات ورود اشتباه است."
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            try:
-                token = Token.objects.get(user_id=user.user_id)
-            except Exception as e:
-                token = Token.objects.create(user=user)
-
-            return Response({
-                "type": "ok",
-                "message": "ورود موفقیت آمیز.",
-                "token": token.key
-            }, status=status.HTTP_200_OK)
-
         except Exception as e:
+            logger.error(e)
             return Response({
-                "type": "error",
-                "message": "اطلاعات ورود اشتباه است."
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'type': 'error',
+                'message': 'خطا از سمت سرور.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LogoutAPIVIew(APIView):
@@ -368,19 +377,19 @@ class LogoutAPIVIew(APIView):
 
 
 class UserMetaDataAPIVIew(generics.RetrieveUpdateAPIView):
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = UserProfileSerializer
 
     def retrieve(self, request, *args, **kwargs):
         user = request.user
         serialized_user = UserProfileSerializer(user).data
+        serialized_user['permissions'] = user.get_all_permissions()
         return Response({'user': serialized_user})
 
 
 class NewProductFormInfoAPIView(APIView):
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = (IsAuthenticated, IsAdminUser,)
 
     @staticmethod
     def get(req):
@@ -443,15 +452,6 @@ class CreateTagIfNotExists(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def is_json(json_data):
-    try:
-        real_json=json.loads(json_data)
-        is_valid=True
-    except ValueError:
-        is_valid=False
-    return is_valid
-
-
 class ProductAPIView(
                     mixins.CreateModelMixin,
                     mixins.RetrieveModelMixin,
@@ -459,14 +459,17 @@ class ProductAPIView(
                     mixins.DestroyModelMixin,
                     generics.ListAPIView
 ):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
     queryset = Product.objects.all()
-    # parser_classes = [MultiPartParser]
 
     # Change serializer upon request method -> (self.request.method == "GET")
     def get_serializer_class(self):
         return ProductSerializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
 
     # Get object by id
     def get_object(self):
@@ -524,7 +527,7 @@ class ModelAPIView(
                     generics.ListAPIView
 ):
     # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     queryset = Model.objects.all()
     # parser_classes = [MultiPartParser]
 
