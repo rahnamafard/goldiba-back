@@ -116,15 +116,41 @@ class ColorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CategoryBase64Serializer(serializers.ModelSerializer):
+    cover = Base64ImageField(max_length=None,
+                             use_url=True,
+                             allow_null=True,
+                             error_messages={
+                                "required": "کاور دسته از قلم افتاده.",
+                                "missing": "کاور دسته از قلم افتاده.",
+                                "invalid": "کاور دسته معتبر نیست.",
+                                "invalid_image": "کاوردسته  معتبر نیست.",
+                                "empty": "فایل کاور دسته خالی است.",
+                                "no_name": "نام فایل کاور دسته نامعتبر است.",
+                                "blank": "کاور دسته را وارد نمایید.",
+                                "null": "کاور دسته را وارد نمایید."
+                             })
+
+    class Meta:
+        model = Category
+        fields = '__all__'
+        extra_kwargs = {
+            "title": {
+                "error_messages": {
+                        "blank": "عنوان دسته را وارد نمایید.",
+                        "null": "عنوان دسته را وارد نمایید."
+                     }
+            },
+        }
+
+
 class ModelSerializer(serializers.ModelSerializer):
     image = Base64ImageField(max_length=None, use_url=True)
 
     class Meta:
         model = Model
-        # fields = '__all__'
         exclude = [
             'product',
-            # 'image',
         ]
         extra_kwargs = {
             "title": {
@@ -212,6 +238,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'tags',
             'auctions',
             'gifts',
+            'categories'
         )
 
     def create(self, validated_data):

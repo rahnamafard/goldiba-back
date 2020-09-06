@@ -1,3 +1,4 @@
+from django.conf.urls import url
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from core import views
@@ -34,6 +35,10 @@ urlpatterns = [
 
     # Color
     path('color/', views.ColorAPIView.as_view(), name="color api"),
+
+    # Product Category (Order of urls is important!)
+    url('^category/parent(?:/(?P<id>.+))?/$', views.CategoryParentAPIView.as_view(), name='children of parent id'),
+    url('^category(?:/(?P<id>.+))?/$', views.CategoryAPIView.as_view(), name='category api'),
 
     # Order
     path('order/', views.OrderAPIView.as_view(), name="order api")

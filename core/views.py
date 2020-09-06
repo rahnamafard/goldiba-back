@@ -453,11 +453,8 @@ class CreateTagIfNotExists(APIView):
 
 
 class ProductAPIView(
-                    mixins.CreateModelMixin,
-                    mixins.RetrieveModelMixin,
-                    mixins.UpdateModelMixin,
-                    mixins.DestroyModelMixin,
-                    generics.ListAPIView
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
 ):
     queryset = Product.objects.all()
 
@@ -478,7 +475,7 @@ class ProductAPIView(
         queryset = self.queryset
         obj = None
         if passed_id is not None:
-            obj = get_object_or_404(queryset, product_id=passed_id)
+            obj = get_object_or_404(queryset, pk=passed_id)
             self.check_object_permissions(request, obj)
         return obj
 
@@ -506,10 +503,6 @@ class ProductAPIView(
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
-    # create a new object
-    # def put(self, request, *args, **kwargs):
-    #     return self.create(request, *args, **kwargs)
-
     # update an existing object
     def patch(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
@@ -520,11 +513,8 @@ class ProductAPIView(
 
 
 class ModelAPIView(
-                    mixins.CreateModelMixin,
-                    mixins.RetrieveModelMixin,
-                    mixins.UpdateModelMixin,
-                    mixins.DestroyModelMixin,
-                    generics.ListAPIView
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
 ):
     # authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -542,7 +532,7 @@ class ModelAPIView(
         queryset = self.queryset
         obj = None
         if passed_id is not None:
-            obj = get_object_or_404(queryset, product_id=passed_id)
+            obj = get_object_or_404(queryset, pk=passed_id)
             self.check_object_permissions(request, obj)
         return obj
 
@@ -570,10 +560,6 @@ class ModelAPIView(
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
-    # create a new object
-    # def put(self, request, *args, **kwargs):
-    #     return self.create(request, *args, **kwargs)
-
     # update an existing object
     def patch(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
@@ -584,11 +570,8 @@ class ModelAPIView(
 
 
 class ColorAPIView(
-                    mixins.CreateModelMixin,
-                    mixins.RetrieveModelMixin,
-                    mixins.UpdateModelMixin,
-                    mixins.DestroyModelMixin,
-                    generics.ListAPIView
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
 ):
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsAuthenticated]
@@ -606,7 +589,7 @@ class ColorAPIView(
         queryset = self.queryset
         obj = None
         if passed_id is not None:
-            obj = get_object_or_404(queryset, product_id=passed_id)
+            obj = get_object_or_404(queryset, pk=passed_id)
             self.check_object_permissions(request, obj)
         return obj
 
@@ -648,11 +631,8 @@ class ColorAPIView(
 
 
 class OrderAPIView(
-                    mixins.CreateModelMixin,
-                    mixins.RetrieveModelMixin,
-                    mixins.UpdateModelMixin,
-                    mixins.DestroyModelMixin,
-                    generics.ListAPIView
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
 ):
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsAuthenticated]
@@ -670,7 +650,7 @@ class OrderAPIView(
         queryset = self.queryset
         obj = None
         if passed_id is not None:
-            obj = get_object_or_404(queryset, product_id=passed_id)
+            obj = get_object_or_404(queryset, pk=passed_id)
             self.check_object_permissions(request, obj)
         return obj
 
@@ -701,6 +681,78 @@ class OrderAPIView(
     # create a new object
     # def put(self, request, *args, **kwargs):
     #     return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class CategoryAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    queryset = Category.objects.all()
+
+    def get_serializer_class(self):
+        return CategoryBase64Serializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        passed_id = self.kwargs.get('id', None)
+        if passed_id is not None:
+            return Category.objects.filter(pk=passed_id)
+        else:
+            return Category.objects.all()
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.kwargs.get('id', None)
+        return Category.objects.get(pk=passed_id)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class CategoryParentAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+                            mixins.UpdateModelMixin,  mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        return CategoryBase64Serializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        passed_id = self.kwargs.get('id', None)
+        if passed_id is not None:
+            return Category.objects.filter(parent=passed_id)
+        else:
+            return Category.objects.filter(parent=None)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
 
     # update an existing object
     def patch(self, request, *args, **kwargs):

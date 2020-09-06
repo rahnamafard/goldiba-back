@@ -1,25 +1,9 @@
-import os
-import uuid
-
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.http import JsonResponse
 from rest_framework.fields import JSONField
-
-from api import settings
-
-
-def get_upload_path_brands(instance, filename):
-    return os.path.join(settings.MEDIA_ROOT, 'images/brands/', instance.name, filename)
-
-
-def get_upload_path_products(instance, filename):
-    return os.path.join(settings.MEDIA_ROOT, 'images/products/', instance.code, filename)
-
-
-def get_upload_path_models(instance, filename):
-    return os.path.join(settings.MEDIA_ROOT, 'images/products/', instance.product.product_id.__str__(), instance.code, filename)
+from core.utils import *
 
 
 class UserManager(BaseUserManager):
@@ -153,6 +137,20 @@ class Status(models.Model):
         return self.label
 
 
+class Category(models.Model):
+    category_id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=255, verbose_name='Category Title', blank=False, null=False)
+    parent = models.ForeignKey('self', blank=True, null=True, on_delete=models.PROTECT)
+    cover = models.ImageField(max_length=255, upload_to=get_upload_path_categories, blank=True, null=True)
+    # products = models.ManyToManyField(Product, related_name='categories', through='ProductCategory')
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name_plural = "Categories"
+
+
 class Product(models.Model):
     product_id = models.AutoField(primary_key=True)
 
@@ -178,23 +176,10 @@ class Product(models.Model):
     tags = models.ManyToManyField('Tag', related_name='products', blank=True)
     auctions = models.ManyToManyField('Auction', related_name='products', blank=True)
     gifts = models.ManyToManyField('Gift', related_name='products', blank=True)
+    categories = models.ManyToManyField(Category, related_name='products', through='ProductCategory')
 
     def __str__(self):
         return self.title
-
-
-class Category(models.Model):
-    title = models.CharField(max_length=255, verbose_name='Category Title', blank=False, null=False)
-    category_id = models.AutoField(primary_key=True)
-    parent = models.ForeignKey('self', on_delete=models.PROTECT)
-    cover = models.ImageField(upload_to='images/category/'+category_id.__str__()+'/', blank=True, null=True)
-    products = models.ManyToManyField(Product, related_name='categories', through='ProductCategory')
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        verbose_name_plural = "Categories"
 
 
 class ParameterCategory(models.Model):
