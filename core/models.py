@@ -142,7 +142,6 @@ class Category(models.Model):
     title = models.CharField(max_length=255, verbose_name='Category Title', blank=False, null=False)
     parent = models.ForeignKey('self', blank=True, null=True, on_delete=models.PROTECT)
     cover = models.ImageField(max_length=255, upload_to=get_upload_path_categories, blank=True, null=True)
-    # products = models.ManyToManyField(Product, related_name='categories', through='ProductCategory')
 
     def __str__(self):
         return self.title
@@ -156,7 +155,10 @@ class Product(models.Model):
 
     title = models.CharField(max_length=255, verbose_name='Title', blank=False, null=False)
     description = models.TextField(blank=True, null=True)
-    code = models.CharField(max_length=32, verbose_name='Product Code', blank=False, null=False, unique=True)
+    code = models.CharField(
+        max_length=32, verbose_name='Product Code', blank=False, null=False, unique=True,
+        error_messages={'unique': 'محصولی با این کد وجود دارد.'}
+    )
     discount = models.PositiveSmallIntegerField(verbose_name='Product Discount', default=0)
     free_send = models.BooleanField(verbose_name='Free Send', blank=False, null=False)
     main_image = models.ImageField(upload_to=get_upload_path_products, blank=False, null=False)
@@ -182,23 +184,23 @@ class Product(models.Model):
         return self.title
 
 
-class ParameterCategory(models.Model):
-    parameter_category_id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=255, verbose_name='Parameter Category Title', blank=False, null=False)
-    compare = models.BooleanField(verbose_name='Comparable', blank=False, null=False)
-
-    class Meta:
-        verbose_name_plural = "Parameter categories"
-
-
+# Many-to-many relation handler table
 class ProductCategory(models.Model):
-    product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
-    category_id = models.ForeignKey(Category, on_delete=models.CASCADE)
-    main_category = models.BooleanField(verbose_name='Main Category', blank=True, null=True, default=False)
-    parameter_categories = models.ManyToManyField(ParameterCategory, related_name='product_categories')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    is_main_category = models.BooleanField(verbose_name='Main Category', blank=True, null=True, default=False)
 
     class Meta:
         verbose_name_plural = "Product categories"
+        db_table = 'core_product_cateogory'
+
+
+class ParameterCategory(models.Model):
+    parameter_category_id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=255, verbose_name='Parameter Category Title', blank=False, null=False)
+
+    class Meta:
+        verbose_name_plural = "Parameter categories"
 
 
 class Parameter(models.Model):
@@ -218,6 +220,7 @@ class Parameter(models.Model):
         default='ST',
     )
     name = models.CharField(max_length=255, verbose_name='Parameter Name', blank=False, null=False)
+    compare = models.BooleanField(verbose_name='Comparable', blank=False, null=False, default=False)
 
 
 class Color(models.Model):
@@ -233,11 +236,11 @@ class Model(models.Model):
     model_id = models.AutoField(primary_key=True)
     product = models.ForeignKey(Product, related_name='models', on_delete=models.CASCADE)
     color = models.ForeignKey(Color, related_name='models', blank=True, null=True, on_delete=models.PROTECT)
-    code = models.CharField(max_length=32, verbose_name='Model Code', blank=True, null=True)
+    code = models.CharField(max_length=32, verbose_name='Model Code', blank=False, null=False)
     title = models.CharField(max_length=255, verbose_name='Model Name', blank=False, null=False)
     description = models.TextField(verbose_name='Description', blank=True, null=True)
     price = models.PositiveIntegerField(verbose_name='Price', blank=False, null=False)
-    in_stock = models.PositiveSmallIntegerField(verbose_name='# In Stock', blank=False, null=False, default=0)
+    in_stock = models.PositiveSmallIntegerField(verbose_name='# In Stock', blank=False, null=False)
     image = models.ImageField(upload_to=get_upload_path_models, blank=False, null=False)
     is_active = models.BooleanField(verbose_name='Activation Status', blank=True, null=True, default=1)
 

@@ -1,3 +1,6 @@
+import uuid
+
+from django.db import transaction
 from rest_framework import serializers, status
 
 from core.utils import unique_order_id_generator
@@ -145,7 +148,16 @@ class CategoryBase64Serializer(serializers.ModelSerializer):
 
 
 class ModelSerializer(serializers.ModelSerializer):
-    image = Base64ImageField(max_length=None, use_url=True)
+    image = Base64ImageField(max_length=None, use_url=True, error_messages={
+                                "required": "تصویر مدل از قلم افتاده.",
+                                "missing": "تصویر مدل از قلم افتاده.",
+                                "invalid": "تصویر مدل معتبر نیست.",
+                                "invalid_image": "تصویر مدل معتبر نیست.",
+                                "empty": "فایل تصویر مدل خالی است.",
+                                "no_name": "نام فایل تصویر مدل نامعتبر است.",
+                                "blank": "تصویر مدل را وارد نمایید.",
+                                "null": "تصویر مدل را وارد نمایید."
+                             })
 
     class Meta:
         model = Model
@@ -168,8 +180,18 @@ class ModelSerializer(serializers.ModelSerializer):
             },
             "price": {
                 "error_messages": {
-                    "required": "لطفا قیمت مدل را وارد کنید.",
+                    "blank": "قیمت مدل را وارد نمایید.",
+                    "null": "قیمت مدل را وارد نمایید.",
+                    "required": "قیمت مدل را وارد کنید.",
                     "invalid": "قیمت وارد شده درست نیست."
+                }
+            },
+            "in_stock": {
+                "error_messages": {
+                    "blank": "موجودی مدل را وارد نمایید.",
+                    "null": "موجودی مدل را وارد نمایید.",
+                    "required": "موجودی مدل را وارد کنید.",
+                    "invalid": "موجودی وارد شده درست نیست."
                 }
             },
             "image": {
@@ -183,9 +205,18 @@ class ModelSerializer(serializers.ModelSerializer):
             },
         }
 
+    # prevent django from converting pk to object in nested serializers
+    def to_internal_value(self, data):
+        color_data = data.get("color")
+        if isinstance(color_data, Color):  # if object is received
+            data["color"] = color_data.pk  # change to its pk value
+        obj = super(ModelSerializer, self).to_internal_value(data)
+        return obj
+
 
 class ProductSerializer(serializers.ModelSerializer):
     models = ModelSerializer(many=True)
+    categories = serializers.PrimaryKeyRelatedField(many=True, queryset=Category.objects.all())
 
     main_image_errors = {
         "invalid": "تصویر اصلی معتبر نیست.",
@@ -227,7 +258,6 @@ class ProductSerializer(serializers.ModelSerializer):
             },
             "code": {
                 "error_messages": {
-                        "unique": "محصولی با این کد محصول قبلا ثبت شده.",
                         "blank": "کد محصول را وارد نمایید.",
                         "null": "کد محصول را وارد نمایید."
                      }
@@ -238,19 +268,33 @@ class ProductSerializer(serializers.ModelSerializer):
             'tags',
             'auctions',
             'gifts',
-            'categories'
         )
 
+    # at least 1 model requried
+    def validate_models(self, attrs):
+        if len(attrs) == 0:
+            raise serializers.ValidationError('حداقل یک مدل برای تعریف محصول لازم است.')
+        return attrs
+
+    @transaction.atomic
     def create(self, validated_data):
-        model_validated_data = validated_data.pop('models')
+        models_validated_data = validated_data.pop('models')
+        categories_validated_data = validated_data.pop('categories')
+
         product = Product.objects.create(**validated_data)
-        model_serializer = self.fields['models']
 
-        for model in model_validated_data:
+        # models
+        for model in models_validated_data:
             model['product'] = product
+            model_serializer = ModelSerializer(data=model)
+            model_serializer.create(model)
 
-        model_serializer.create(model_validated_data)
+        # categories
+        product.categories.set(categories_validated_data)
+
         return product
+
+
 
 
 class OrderSerializer(serializers.ModelSerializer):

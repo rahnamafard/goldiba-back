@@ -406,6 +406,9 @@ class NewProductFormInfoAPIView(APIView):
             colors = Color.objects.all()
             color_serializer = ColorSerializer(colors, many=True)
 
+            categories = Category.objects.all()
+            category_serializer = CategoryBase64Serializer(categories, many=True)
+
             return Response({
                 "type": "ok",
                 "body": {
@@ -413,6 +416,7 @@ class NewProductFormInfoAPIView(APIView):
                     "brands": brand_serializer.data,
                     "tags": tag_serializer.data,
                     "colors": color_serializer.data,
+                    "categories": category_serializer.data
                 }
             }, status=status.HTTP_200_OK)
 
@@ -464,8 +468,8 @@ class ProductAPIView(
 
     def get_permissions(self):
         permission_classes = []
-        if self.request.method == "POST":
-            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        # if self.request.method == "POST":
+        #     permission_classes = [IsAuthenticated, DjangoModelPermissions]
         return [permission() for permission in permission_classes]
 
     # Get object by id
