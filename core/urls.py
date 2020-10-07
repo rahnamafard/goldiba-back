@@ -25,8 +25,8 @@ urlpatterns = [
 
     # Product
     path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info"),
-    path('product/', views.ProductAPIView.as_view(), name="product api"),
-    url('^product/category(?:/(?P<cat_id>.+))?/$', views.ProductAPIView.as_view(), name='children of parent id'),
+    # url('^product/', views.ProductAPIView.as_view()),
+    url(r'^product/$', views.ProductAPIView.as_view(), name="product api"),
 
     # Tag
     # path('tag/create-if-not-exists/', views.CreateTagIfNotExists.as_view(), name="create tag if not exists"),

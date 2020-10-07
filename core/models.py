@@ -253,29 +253,74 @@ class Order(models.Model):
     user = models.ForeignKey(User, related_name='orders', null=True, on_delete=models.SET_NULL)  # if user deleted, order becomes null
 
     ORDER_STATUS_CHOICES = [
-        ('BP', 'Before Payment'),
-        ('AP', 'After Payment'),
+        ('PE', 'Pending'),
+        ('AP', 'Approved'),
+        ('RJ', 'Rejected')
     ]
 
     parameter_type = models.CharField(
         max_length=2,
         choices=ORDER_STATUS_CHOICES,
-        default='BP',
+        default='PE',
     )
 
-    # payment_id
     # package_id
 
-    tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code', unique=True)
-
+    tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code')
     phone = models.CharField(max_length=15, verbose_name='Receiver Phone Name')
     postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')
     postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
     datetime = models.DateTimeField(auto_now=True)
-
     total_price = models.PositiveIntegerField(verbose_name='Total Price')
 
-    models = models.ManyToManyField('Model', related_name='orders')
+    models = models.ManyToManyField('Model', related_name='orders', through='OrderModel')
 
     def __str__(self):
         return self.tracking_code
+
+
+# Many-to-many relation handler table
+class OrderModel(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    model = models.ForeignKey(Model, on_delete=models.PROTECT)
+    price = models.PositiveIntegerField(verbose_name='Price', blank=False, null=False)
+    quantity = models.PositiveIntegerField(verbose_name='Quantity', blank=False, null=False)
+    discount = models.PositiveSmallIntegerField(verbose_name='Product Discount', default=0)
+
+    class Meta:
+        verbose_name_plural = "Model Order"
+        db_table = 'core_order_models'
+
+
+class Payment(models.Model):
+    payment_id = models.AutoField(primary_key=True)
+    product = models.ForeignKey(Order, related_name='payments', on_delete=models.CASCADE)
+
+    PAYMENT_STATUS_CHOICES = [
+        ('OK', 'Successful.'),
+        ('ER', 'Unsuccessful.'),
+    ]
+
+    payment_status = models.CharField(
+        max_length=2,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='ER',
+    )
+
+    PAYMENT_METHOD_CHOICES = [
+        ('ON', 'Online.'),
+        ('OF', 'Offline.'),
+    ]
+
+    payment_method = models.CharField(
+        max_length=2,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='OF',
+    )
+
+    tracking_code = models.CharField(max_length=10, verbose_name='Bank Tracking Code')  # , unique=True)
+    attachment = models.ImageField(upload_to=get_upload_path_payments, blank=False, null=False)
+
+    def __str__(self):
+        return self.tracking_code
+

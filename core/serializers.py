@@ -1,9 +1,10 @@
 import uuid
 
 from django.db import transaction
+from django.utils.crypto import get_random_string
 from rest_framework import serializers, status
+from rest_framework.utils import json
 
-from core.utils import unique_order_id_generator
 from .models import *
 
 
@@ -295,20 +296,61 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
 
-
-
 class OrderSerializer(serializers.ModelSerializer):
-    models = serializers.PrimaryKeyRelatedField(many=True, queryset=Model.objects.all())
+    cart = serializers.JSONField(write_only=True)
 
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = ('order_id',
+                  'user',
+                  'parameter_type',
+                  'tracking_code',
+                  'phone',
+                  'postal_code',
+                  'postal_address',
+                  'datetime',
+                  'total_price',
+                  'models',
+                  'cart'
+                  )
 
+    def validate_tracking_code(self, value):
+        x = Order.objects.filter(tracking_code=value)
+        if not x.exists():
+            return True
+        else:
+            return ValueError("manamamam")
+
+    @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop('tracking_code')  # use default
-        rec_models = validated_data.pop('models')
+        cart = validated_data.pop('cart')
+        validated_data.pop('tracking_code')  # to use default
+
         order = Order.objects.create(**validated_data)
-        order.tracking_code = uuid.uuid4().hex[:8].upper()
+
+        random_string = get_random_string(length=10, allowed_chars=''.join((string.ascii_uppercase, string.digits)))
+
+        # unique check
+        while True:
+            x = Order.objects.filter(tracking_code=random_string)
+            if not x.exists():
+                break
+            else:
+                random_string = get_random_string(length=10, allowed_chars=''.join((string.ascii_uppercase, string.digits)))
+
+
+        order.tracking_code = random_string
+
+        for item in cart:
+            model = Model.objects.get(pk=item['model'])
+            quantity = item['quantity']
+
+            new_order_model = OrderModel()
+            new_order_model.order = order
+            new_order_model.model = model
+            new_order_model.price = model.price
+            new_order_model.quantity = quantity
+            new_order_model.save()
+
         order.save()
-        order.models.set(rec_models)
         return order
