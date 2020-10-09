@@ -42,5 +42,6 @@ urlpatterns = [
     url('^category(?:/(?P<id>.+))?/$', views.CategoryAPIView.as_view(), name='category api'),
 
     # Order
-    path('order/', views.OrderAPIView.as_view(), name="order api")
+    path('order/', views.OrderAPIView.as_view(), name="order api"),
+    path('send-method/', views.SendMethodAPIView.as_view(), name="send method api")
 ]

@@ -296,6 +296,12 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
 
+class SendMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SendMethod
+        fields = '__all__'
+
+
 class OrderSerializer(serializers.ModelSerializer):
     cart = serializers.JSONField(write_only=True)
 
@@ -311,40 +317,44 @@ class OrderSerializer(serializers.ModelSerializer):
                   'datetime',
                   'total_price',
                   'models',
-                  'cart'
+                  'cart',  # includes models and quantities
+                  'send_method',
                   )
-
-    def validate_tracking_code(self, value):
-        x = Order.objects.filter(tracking_code=value)
-        if not x.exists():
-            return True
-        else:
-            return ValueError("manamamam")
 
     @transaction.atomic
     def create(self, validated_data):
+        # validated_data
         cart = validated_data.pop('cart')
         validated_data.pop('tracking_code')  # to use default
+        send_method = validated_data.get('send_method')
 
-        order = Order.objects.create(**validated_data)
+        # Variables
+        total_price = 0
 
+        # Create order
+        order = Order.objects.create(**validated_data,
+                                     send_method_price=send_method.price,
+                                     )
+
+        # Add send_method price to total price
+        total_price += send_method.price
+
+        # Generate Unique tracking_code
         random_string = get_random_string(length=10, allowed_chars=''.join((string.ascii_uppercase, string.digits)))
-
-        # unique check
-        while True:
+        while True:  # unique check
             x = Order.objects.filter(tracking_code=random_string)
             if not x.exists():
                 break
             else:
                 random_string = get_random_string(length=10, allowed_chars=''.join((string.ascii_uppercase, string.digits)))
-
-
         order.tracking_code = random_string
 
+        # Assign models to order
         for item in cart:
             model = Model.objects.get(pk=item['model'])
             quantity = item['quantity']
 
+            # save new order
             new_order_model = OrderModel()
             new_order_model.order = order
             new_order_model.model = model
@@ -352,5 +362,17 @@ class OrderSerializer(serializers.ModelSerializer):
             new_order_model.quantity = quantity
             new_order_model.save()
 
+            # Decrease in_stock
+            model.in_stock -= quantity
+            model.save()
+
+            # Add model price
+            total_price += quantity * model.price
+
+        # Set final total_price on order
+        order.total_price = total_price
+
+        # Insert order to database
         order.save()
+
         return order

@@ -248,6 +248,16 @@ class Model(models.Model):
         return self.title
 
 
+class SendMethod(models.Model):
+    send_method_id = models.AutoField(primary_key=True)
+    label = models.CharField(max_length=15, verbose_name='Label of Send Method')
+    price = models.PositiveIntegerField(verbose_name='Send Method Price')
+    alternative_price_text = models.CharField(null=True, blank=True, max_length=30, verbose_name='Text Alternative For Price')
+
+    def __str__(self):
+        return self.label
+
+
 class Order(models.Model):
     order_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, related_name='orders', null=True, on_delete=models.SET_NULL)  # if user deleted, order becomes null
@@ -272,6 +282,10 @@ class Order(models.Model):
     postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
     datetime = models.DateTimeField(auto_now=True)
     total_price = models.PositiveIntegerField(verbose_name='Total Price')
+
+    # send method
+    send_method = models.ForeignKey(SendMethod, related_name='orders', null=True, on_delete=models.SET_NULL)
+    send_method_price = models.PositiveIntegerField(verbose_name='Send Method Price of Order')
 
     models = models.ManyToManyField('Model', related_name='orders', through='OrderModel')
 

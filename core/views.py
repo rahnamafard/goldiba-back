@@ -775,3 +775,36 @@ class OrderAPIView(
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
 
+
+class SendMethodAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        return SendMethodSerializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        return SendMethod.objects.all()
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.kwargs.get('id', None)
+        return Category.objects.get(pk=passed_id)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
