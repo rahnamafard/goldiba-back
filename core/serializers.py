@@ -309,7 +309,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ('order_id',
                   'user',
-                  'parameter_type',
+                  'order_status',
                   'tracking_code',
                   'phone',
                   'postal_code',
@@ -325,19 +325,16 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # validated_data
         cart = validated_data.pop('cart')
-        validated_data.pop('tracking_code')  # to use default
+        validated_data.pop('tracking_code')  # to generate manually server-side
         send_method = validated_data.get('send_method')
 
         # Variables
-        total_price = 0
+        total_price = send_method.price
 
         # Create order
         order = Order.objects.create(**validated_data,
                                      send_method_price=send_method.price,
                                      )
-
-        # Add send_method price to total price
-        total_price += send_method.price
 
         # Generate Unique tracking_code
         random_string = get_random_string(length=10, allowed_chars=''.join((string.ascii_uppercase, string.digits)))

@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from rest_framework import generics, mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, IsAdminUser
@@ -19,10 +20,16 @@ import requests
 logger = logging.getLogger(__name__)
 register_user_redis = redis.StrictRedis()
 reset_pass_redis = redis.StrictRedis()
+
+# kavenegar
 # sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
 sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D' # nourifatemeh441@gmail.com
 sms_api_url = "https://api.kavenegar.com/v1/{}/verify/lookup.json".format(sms_api_key)
 
+# zibal
+zibal_request_url = 'https://gateway.zibal.ir/v1/request'  # post
+zibal_verify_url = 'https://gateway.zibal.ir/v1/verify'  # post
+merchant_key = '5f81b70318f93473c1e674c9'
 
 def is_json(json_data):
     try:
@@ -808,3 +815,109 @@ class SendMethodAPIView(
     # delete an existing object
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class PaymentRequestAPIView(APIView):
+    @staticmethod
+    def post(request):
+        try:
+            json_body = json.loads(request.body)
+            order_tracking_code = json_body['tracking_code']
+
+            order = Order.objects.get(tracking_code=order_tracking_code)
+
+            # Request to zibal for starting a new payment session
+            zibal_response = requests.post(zibal_request_url, json={
+                "merchant": merchant_key,
+                "amount": order.total_price * 10,
+                "callbackUrl": 'http://localhost:8000/api/payment/callback/',
+                "description": "خرید از گلدیبا",
+                "orderId": order.tracking_code,
+                "mobile": order.user.mobile,
+            })
+
+            # API Call Successful
+            if zibal_response.ok:
+                zibal_json = zibal_response.json()
+                zibal_trackId = str(zibal_json['trackId'])
+
+                payment = Payment(
+                    order=order,
+                    tracking_code=zibal_trackId,
+                    payment_status='ER',
+                    payment_method='ON',
+                )
+
+                # Response Status is OK
+                if zibal_json.get('result') == 100 or zibal_json.get('result') == 201:
+                    payment.save()  # Payment session started
+                    return JsonResponse({
+                        'type': 'ok',
+                        'message': 'درگاه پرداخت آماده است.',
+                        'payment_url': "https://gateway.zibal.ir/start/" + zibal_trackId + "/"
+                    }, status=status.HTTP_200_OK)
+
+                # Response Status is not OK
+                else:
+                    return JsonResponse({
+                        'type': 'error',
+                        'message': zibal_json.get('message')
+                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            # API Call Failed
+            else:
+                return JsonResponse({
+                    'type': 'error',
+                    'message': 'سرویس درگاه پرداخت در دسترس نیست.'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور گلدیبا.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PaymentCallbackAPIView(APIView):
+    def get(self, request):
+        try:
+            payment_success = self.request.query_params.get('success', None)
+            payment_trackId = self.request.query_params.get('trackId', None)
+            payment_orderId = self.request.query_params.get('orderId', None)
+            payment_status  = self.request.query_params.get('status', None)
+
+            order = Order.objects.get(tracking_code=payment_orderId)
+            payment = Payment.objects.get(tracking_code=payment_trackId)
+
+            if payment_success == 1:
+                order.order_status = 'AP'
+                payment.payment_status = 'OK'
+
+                # send verification to zibal
+                zibal_response = requests.post(zibal_verify_url, json={
+                      "merchant": merchant_key,
+                      "trackId": payment_trackId
+                    }
+                )
+                zibal_json = zibal_response.json()
+
+            else:
+                order.order_status = 'RJ'
+                payment.payment_status = 'ER'
+
+            return redirect(
+                'http://localhost:3000/order/callback/?tracking='
+                + payment_orderId
+                + '&success='
+                + payment_success
+            )
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

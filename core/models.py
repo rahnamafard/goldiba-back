@@ -268,7 +268,7 @@ class Order(models.Model):
         ('RJ', 'Rejected')
     ]
 
-    parameter_type = models.CharField(
+    order_status = models.CharField(
         max_length=2,
         choices=ORDER_STATUS_CHOICES,
         default='PE',
@@ -308,7 +308,7 @@ class OrderModel(models.Model):
 
 class Payment(models.Model):
     payment_id = models.AutoField(primary_key=True)
-    product = models.ForeignKey(Order, related_name='payments', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='payments', on_delete=models.CASCADE)
 
     PAYMENT_STATUS_CHOICES = [
         ('OK', 'Successful.'),

@@ -25,7 +25,6 @@ urlpatterns = [
 
     # Product
     path('product/new-product-form-info/', views.NewProductFormInfoAPIView.as_view(), name="new product form info"),
-    # url('^product/', views.ProductAPIView.as_view()),
     url(r'^product/$', views.ProductAPIView.as_view(), name="product api"),
 
     # Tag
@@ -43,5 +42,9 @@ urlpatterns = [
 
     # Order
     path('order/', views.OrderAPIView.as_view(), name="order api"),
-    path('send-method/', views.SendMethodAPIView.as_view(), name="send method api")
+    path('send-method/', views.SendMethodAPIView.as_view(), name="send method api"),
+
+    # Payment
+    path('payment/request/', views.PaymentRequestAPIView.as_view(), name="payment request api"),
+    url(r'^payment/callback/$', views.PaymentCallbackAPIView.as_view(), name="payment callback api")
 ]
