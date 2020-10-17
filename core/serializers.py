@@ -1,9 +1,7 @@
-import uuid
-
 from django.db import transaction
 from django.utils.crypto import get_random_string
 from rest_framework import serializers, status
-from rest_framework.utils import json
+from rest_framework.exceptions import ValidationError
 
 from .models import *
 
@@ -108,10 +106,10 @@ class BrandSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = '__all__'
+# class TagSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Tag
+#         fields = '__all__'
 
 
 class ColorSerializer(serializers.ModelSerializer):
@@ -266,9 +264,9 @@ class ProductSerializer(serializers.ModelSerializer):
         }
         exclude = (
             'likes',
-            'tags',
-            'auctions',
-            'gifts',
+            # 'tags',
+            # 'auctions',
+            # 'gifts',
         )
 
     # at least 1 model requried
@@ -330,10 +328,11 @@ class OrderSerializer(serializers.ModelSerializer):
 
         # Variables
         total_price = send_method.price
+        validation_errors = []
 
         # Create order
-        order = Order.objects.create(**validated_data,
-                                     send_method_price=send_method.price,
+        order = Order.objects.create(send_method_price=send_method.price,
+                                     **validated_data
                                      )
 
         # Generate Unique tracking_code
@@ -360,11 +359,22 @@ class OrderSerializer(serializers.ModelSerializer):
             new_order_model.save()
 
             # Decrease in_stock
-            model.in_stock -= quantity
-            model.save()
+            if model.in_stock < quantity:
+                validation_errors.append(
+                    {
+                        "in_stock": ['موجودی مدل «' + model.title + '» کافی نیست.'],
+                    }
+                )
+            else:
+                model.in_stock -= quantity
+                model.save()
 
             # Add model price
             total_price += quantity * model.price
+
+        # validations
+        if len(validation_errors) > 0:
+            raise ValidationError({"models": validation_errors})
 
         # Set final total_price on order
         order.total_price = total_price

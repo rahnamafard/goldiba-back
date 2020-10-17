@@ -41,10 +41,10 @@ urlpatterns = [
     url('^category(?:/(?P<id>.+))?/$', views.CategoryAPIView.as_view(), name='category api'),
 
     # Order
-    path('order/', views.OrderAPIView.as_view(), name="order api"),
+    url('^order(?:/(?P<tracking_code>.+))?/$', views.OrderAPIView.as_view(), name='order api get by tracking code'),
     path('send-method/', views.SendMethodAPIView.as_view(), name="send method api"),
 
     # Payment
-    path('payment/request/', views.PaymentRequestAPIView.as_view(), name="payment request api"),
-    url(r'^payment/callback/$', views.PaymentCallbackAPIView.as_view(), name="payment callback api")
+    path('payment/request/', views.TransactionRequestAPIView.as_view(), name="payment request api"),
+    url(r'^payment/callback/$', views.ZibalPaymentCallbackAPIView.as_view(), name="payment callback api")
 ]

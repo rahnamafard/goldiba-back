@@ -1,4 +1,6 @@
+from datetime import datetime
 from django.shortcuts import redirect
+from django.utils import dateparse
 from rest_framework import generics, mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, IsAdminUser
@@ -407,8 +409,8 @@ class NewProductFormInfoAPIView(APIView):
             brands = Brand.objects.all()
             brand_serializer = BrandSerializer(brands, many=True)
 
-            tags = Tag.objects.all()
-            tag_serializer = TagSerializer(tags, many=True)
+            # tags = Tag.objects.all()
+            # tag_serializer = TagSerializer(tags, many=True)
 
             colors = Color.objects.all()
             color_serializer = ColorSerializer(colors, many=True)
@@ -421,7 +423,7 @@ class NewProductFormInfoAPIView(APIView):
                 "body": {
                     "statuses": status_serializer.data,
                     "brands": brand_serializer.data,
-                    "tags": tag_serializer.data,
+                    # "tags": tag_serializer.data,
                     "colors": color_serializer.data,
                     "categories": category_serializer.data
                 }
@@ -435,32 +437,32 @@ class NewProductFormInfoAPIView(APIView):
 
 
 # POSSIBLY NOT CORRECT, SO CHECK IT
-class CreateTagIfNotExists(APIView):
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated, IsAdminUser)
-
-    @staticmethod
-    def post(req):
-        try:
-            json_tags = json.loads(req.body)
-
-            new_tags = []
-            for tag in json_tags:
-                print(tag)
-                new_tag = Tag.objects.get_or_create(tag)
-                new_tags.append(new_tag)
-
-            return Response({
-                "type": "ok",
-                "tags": new_tags
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.error(e)
-            return Response({
-                "type": "error",
-                "message": "خطا از سمت سرور."
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# class CreateTagIfNotExists(APIView):
+#     authentication_classes = (TokenAuthentication,)
+#     permission_classes = (IsAuthenticated, IsAdminUser)
+#
+#     @staticmethod
+#     def post(req):
+#         try:
+#             json_tags = json.loads(req.body)
+#
+#             new_tags = []
+#             for tag in json_tags:
+#                 print(tag)
+#                 new_tag = Tag.objects.get_or_create(tag)
+#                 new_tags.append(new_tag)
+#
+#             return Response({
+#                 "type": "ok",
+#                 "tags": new_tags
+#             }, status=status.HTTP_200_OK)
+#
+#         except Exception as e:
+#             logger.error(e)
+#             return Response({
+#                 "type": "error",
+#                 "message": "خطا از سمت سرور."
+#             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ProductAPIView(
@@ -726,6 +728,40 @@ class CategoryParentAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
+class SendMethodAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        return SendMethodSerializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        return SendMethod.objects.all()
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.kwargs.get('id', None)
+        return Category.objects.get(pk=passed_id)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
 class OrderAPIView(
     mixins.CreateModelMixin, mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
@@ -737,7 +773,11 @@ class OrderAPIView(
         return OrderSerializer
 
     def get_queryset(self):
-        return Order.objects.all()
+        tracking_code = self.kwargs.get('tracking_code', None)
+        if tracking_code is not None:
+            return Order.objects.filter(tracking_code=tracking_code)
+        else:
+            return Order.objects.all()
 
     # Get object by id
     def get_object(self):
@@ -783,53 +823,25 @@ class OrderAPIView(
         return self.destroy(request, *args, **kwargs)
 
 
-class SendMethodAPIView(
-    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
-):
-    def get_serializer_class(self):
-        return SendMethodSerializer
-
-    def get_permissions(self):
-        permission_classes = []
-        if self.request.method == "POST":
-            permission_classes = [IsAuthenticated, DjangoModelPermissions]
-        return [permission() for permission in permission_classes]
-
-    def get_queryset(self):
-        return SendMethod.objects.all()
-
-    # create a new object
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-    # update an existing object
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
-    # required for patching
-    def get_object(self):
-        passed_id = self.kwargs.get('id', None)
-        return Category.objects.get(pk=passed_id)
-
-    # delete an existing object
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-
-class PaymentRequestAPIView(APIView):
+class TransactionRequestAPIView(APIView):
     @staticmethod
     def post(request):
         try:
             json_body = json.loads(request.body)
+
+            # Find order
             order_tracking_code = json_body['tracking_code']
-
             order = Order.objects.get(tracking_code=order_tracking_code)
+            price_rial = order.total_price * 10
 
+            # Create Transaction
+            transaction = Transaction.objects.create(order=order, amount=price_rial, method='ZB')  # , method=payment_method_key(json_body['payment_method'])
+
+            # TODO: decide upon payment_method received from front
             # Request to zibal for starting a new payment session
             zibal_response = requests.post(zibal_request_url, json={
                 "merchant": merchant_key,
-                "amount": order.total_price * 10,
+                "amount": price_rial,
                 "callbackUrl": 'http://localhost:8000/api/payment/callback/',
                 "description": "خرید از گلدیبا",
                 "orderId": order.tracking_code,
@@ -841,16 +853,15 @@ class PaymentRequestAPIView(APIView):
                 zibal_json = zibal_response.json()
                 zibal_trackId = str(zibal_json['trackId'])
 
-                payment = Payment(
-                    order=order,
-                    tracking_code=zibal_trackId,
-                    payment_status='ER',
-                    payment_method='ON',
+                zibal_payment = ZibalPayment(
+                    transaction=transaction,
+                    amount=price_rial,
+                    track_id=zibal_trackId,
                 )
 
                 # Response Status is OK
                 if zibal_json.get('result') == 100 or zibal_json.get('result') == 201:
-                    payment.save()  # Payment session started
+                    zibal_payment.save()  # Payment session started
                     return JsonResponse({
                         'type': 'ok',
                         'message': 'درگاه پرداخت آماده است.',
@@ -880,20 +891,32 @@ class PaymentRequestAPIView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class PaymentCallbackAPIView(APIView):
+class ZibalPaymentCallbackAPIView(APIView):
     def get(self, request):
         try:
             payment_success = self.request.query_params.get('success', None)
             payment_trackId = self.request.query_params.get('trackId', None)
             payment_orderId = self.request.query_params.get('orderId', None)
-            payment_status  = self.request.query_params.get('status', None)
+            payment_status = self.request.query_params.get('status', None)
 
+            # Find payment & transaction
+            zibal_payment = ZibalPayment.objects.get(track_id=payment_trackId)
+            transac = zibal_payment.transaction
+
+            zibal_payment.success = payment_success
+            zibal_payment.status = payment_status
+            zibal_payment.save()
+
+            # Find order
             order = Order.objects.get(tracking_code=payment_orderId)
-            payment = Payment.objects.get(tracking_code=payment_trackId)
+            print('payment success = ', 1)
+            if payment_success == '1':
 
-            if payment_success == 1:
+                transac.status = 'OK'
+                transac.save()
+
                 order.order_status = 'AP'
-                payment.payment_status = 'OK'
+                order.save()
 
                 # send verification to zibal
                 zibal_response = requests.post(zibal_verify_url, json={
@@ -901,11 +924,33 @@ class PaymentCallbackAPIView(APIView):
                       "trackId": payment_trackId
                     }
                 )
-                zibal_json = zibal_response.json()
+
+                if zibal_response.ok:
+                    zibal_json = zibal_response.json()
+
+                    transac.paid_at = dateparse.parse_datetime(zibal_json['paidAt'])
+                    transac.card_number = zibal_json['cardNumber']
+                    transac.amount = zibal_json['amount']
+                    transac.ref_number = zibal_json['refNumber']
+                    transac.description = zibal_json['description']
+                    transac.save()
+
+                    zibal_payment.status = zibal_json['status']
+                    zibal_payment.amount = zibal_json['amount']
+                    zibal_payment.save()
+
+                else:
+                    return Response({
+                        'type': 'error',
+                        'status': 'فرآیند ارسال تاییدیه پرداخت به درگاه زیبال موفقیت آمیز نبود.'
+                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             else:
-                order.order_status = 'RJ'
-                payment.payment_status = 'ER'
+                transac.status = 'ER'
+                transac.save()
+
+                zibal_payment.status = payment_status
+                zibal_payment.save()
 
             return redirect(
                 'http://localhost:3000/order/callback/?tracking='

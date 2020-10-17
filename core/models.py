@@ -87,33 +87,33 @@ class User(AbstractUser):
         return self.first_name + " " + self.last_name
 
 
-class Tag(models.Model):
-    tag_id = models.AutoField(primary_key=True)
-    tag = models.CharField(max_length=255, verbose_name='Tag Text', blank=False, null=False)
-
-    def __str__(self):
-        return self.tag
-
-
-class Auction(models.Model):
-    auction_id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=255, verbose_name='Auction Title', blank=True, null=True)
-    percent = models.PositiveIntegerField(verbose_name='Off Percentage', blank=False, null=False)
-    start_date = models.DateTimeField(verbose_name='Start Time/Date', blank=False, null=False)
-    end_date = models.DateTimeField(verbose_name='Start Time/Date', blank=False, null=False)
-    cover = models.ImageField(upload_to='images/auction/'+auction_id.__str__()+'/', blank=True, null=True)
-
-    def __str__(self):
-        return self.title
-
-
-class Gift(models.Model):
-    gift_id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=255, verbose_name='Gift Title', blank=False, null=False)
-    cover = models.ImageField(upload_to='images/gift/'+gift_id.__str__()+'/', blank=True, null=True)
-
-    def __str__(self):
-        return self.title
+# class Tag(models.Model):
+#     tag_id = models.AutoField(primary_key=True)
+#     tag = models.CharField(max_length=255, verbose_name='Tag Text', blank=False, null=False)
+#
+#     def __str__(self):
+#         return self.tag
+#
+#
+# class Auction(models.Model):
+#     auction_id = models.AutoField(primary_key=True)
+#     title = models.CharField(max_length=255, verbose_name='Auction Title', blank=True, null=True)
+#     percent = models.PositiveIntegerField(verbose_name='Off Percentage', blank=False, null=False)
+#     start_date = models.DateTimeField(verbose_name='Start Time/Date', blank=False, null=False)
+#     end_date = models.DateTimeField(verbose_name='Start Time/Date', blank=False, null=False)
+#     cover = models.ImageField(upload_to='images/auction/'+auction_id.__str__()+'/', blank=True, null=True)
+#
+#     def __str__(self):
+#         return self.title
+#
+#
+# class Gift(models.Model):
+#     gift_id = models.AutoField(primary_key=True)
+#     title = models.CharField(max_length=255, verbose_name='Gift Title', blank=False, null=False)
+#     cover = models.ImageField(upload_to='images/gift/'+gift_id.__str__()+'/', blank=True, null=True)
+#
+#     def __str__(self):
+#         return self.title
 
 
 class Brand(models.Model):
@@ -175,9 +175,9 @@ class Product(models.Model):
     status = models.ForeignKey(Status, related_name='products', on_delete=models.PROTECT, blank=True, null=True)
 
     # Many-to-many relations
-    tags = models.ManyToManyField('Tag', related_name='products', blank=True)
-    auctions = models.ManyToManyField('Auction', related_name='products', blank=True)
-    gifts = models.ManyToManyField('Gift', related_name='products', blank=True)
+    # tags = models.ManyToManyField('Tag', related_name='products', blank=True)
+    # auctions = models.ManyToManyField('Auction', related_name='products', blank=True)
+    # gifts = models.ManyToManyField('Gift', related_name='products', blank=True)
     categories = models.ManyToManyField(Category, related_name='products', through='ProductCategory')
 
     def __str__(self):
@@ -265,9 +265,7 @@ class Order(models.Model):
     ORDER_STATUS_CHOICES = [
         ('PE', 'Pending'),
         ('AP', 'Approved'),
-        ('RJ', 'Rejected')
     ]
-
     order_status = models.CharField(
         max_length=2,
         choices=ORDER_STATUS_CHOICES,
@@ -287,6 +285,11 @@ class Order(models.Model):
     send_method = models.ForeignKey(SendMethod, related_name='orders', null=True, on_delete=models.SET_NULL)
     send_method_price = models.PositiveIntegerField(verbose_name='Send Method Price of Order')
 
+    # expiration
+    created_at = models.DateTimeField(auto_now=True)
+    expired = models.BooleanField(null=False, blank=False, default=False, verbose_name='Is this Order expired?')
+
+    # must be final field due to name conflicts
     models = models.ManyToManyField('Model', related_name='orders', through='OrderModel')
 
     def __str__(self):
@@ -306,35 +309,35 @@ class OrderModel(models.Model):
         db_table = 'core_order_models'
 
 
-class Payment(models.Model):
-    payment_id = models.AutoField(primary_key=True)
-    order = models.ForeignKey(Order, related_name='payments', on_delete=models.CASCADE)
+class Transaction(models.Model):
+    transaction_id = models.AutoField(primary_key=True)
+    order = models.ForeignKey(Order, related_name='transactions', on_delete=models.CASCADE)
 
-    PAYMENT_STATUS_CHOICES = [
-        ('OK', 'Successful.'),
-        ('ER', 'Unsuccessful.'),
-    ]
+    ref_number = models.CharField(max_length=32, verbose_name='Transaction Reference Number')
+    amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Transaction Amount')
+    card_number = models.CharField(max_length=32, verbose_name='Source Cart')
+    description = models.TextField(max_length=255, verbose_name='Transaction Description')
+    paid_at = models.DateTimeField(blank=True, null=True, verbose_name='Transaction Date/Time')
 
-    payment_status = models.CharField(
-        max_length=2,
-        choices=PAYMENT_STATUS_CHOICES,
-        default='ER',
-    )
+    STATUS_CHOICES = [('PE', 'Pending'), ('OK', 'Successful'), ('ER', 'Unsuccessful')]
+    status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='PE')
 
-    PAYMENT_METHOD_CHOICES = [
-        ('ON', 'Online.'),
-        ('OF', 'Offline.'),
-    ]
-
-    payment_method = models.CharField(
-        max_length=2,
-        choices=PAYMENT_METHOD_CHOICES,
-        default='OF',
-    )
-
-    tracking_code = models.CharField(max_length=10, verbose_name='Bank Tracking Code')  # , unique=True)
-    attachment = models.ImageField(upload_to=get_upload_path_payments, blank=False, null=False)
+    METHOD_CHOICES = [('ZB', 'Zibal'), ('BM', 'Behpardakht Mellat'), ('OF', 'Offline.')]
+    method = models.CharField(max_length=2, choices=METHOD_CHOICES, default='OF')
 
     def __str__(self):
-        return self.tracking_code
+        s = str(self.transaction_id)
+        if self.ref_number != '':
+            s += ' (REF: ' + self.ref_number + ')'
+        return s
 
+
+class ZibalPayment(models.Model):
+    transaction = models.ForeignKey(Transaction, related_name='zibalPayments', on_delete=models.CASCADE)
+    amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Zibal Payment Amount')
+    track_id = models.CharField(max_length=32, verbose_name='Zibal trackId')
+    success = models.BooleanField(null=False, blank=False, default=0, verbose_name='Zibal Payment Successful?')
+    status = models.SmallIntegerField(null=True, blank=True, verbose_name='Zibal Payment Status')
+
+    def __str__(self):
+        return self.track_id
