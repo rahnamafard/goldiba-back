@@ -4,7 +4,7 @@ import string
 import os
 
 from django.utils.encoding import force_text
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.exceptions import APIException
 
 from api import settings
@@ -27,8 +27,8 @@ def get_upload_path_models(instance, filename):
     return os.path.join(settings.MEDIA_ROOT, 'images/products/', instance.product.product_id.__str__(), instance.code, filename)
 
 
-def get_upload_path_payments(instance, filename):
-    return os.path.join(settings.MEDIA_ROOT, 'images/payments/', instance.payment_id.__str__(), filename)
+def get_upload_path_offline_payments(instance, filename):
+    return os.path.join(settings.MEDIA_ROOT, 'images/payments/offline/', instance.transaction.transaction_id.__str__(), filename)
 
 
 # Generate Random Code for Orders

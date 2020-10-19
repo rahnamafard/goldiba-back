@@ -206,7 +206,7 @@ class Migration(migrations.Migration):
                 ('payment_status', models.CharField(choices=[('OK', 'Successful.'), ('ER', 'Unsuccessful.')], default='ER', max_length=2)),
                 ('payment_method', models.CharField(choices=[('ON', 'Online.'), ('OF', 'Offline.')], default='OF', max_length=2)),
                 ('tracking_code', models.CharField(max_length=10, verbose_name='Bank Tracking Code')),
-                ('attachment', models.ImageField(upload_to=core.utils.get_upload_path_payments)),
+                ('attachment', models.ImageField(upload_to=core.utils.get_upload_path_offline_payments)),
                 ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='core.Order')),
             ],
         ),

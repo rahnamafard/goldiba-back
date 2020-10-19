@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.utils.crypto import get_random_string
-from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 
 from .models import *
@@ -383,3 +382,11 @@ class OrderSerializer(serializers.ModelSerializer):
         order.save()
 
         return order
+
+
+class OfflinePaymentSerializer(serializers.ModelSerializer):
+    attachment = Base64ImageField(max_length=None, use_url=True)
+
+    class Meta:
+        model = OfflinePayment
+        fields = '__all__'

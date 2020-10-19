@@ -823,7 +823,8 @@ class OrderAPIView(
         return self.destroy(request, *args, **kwargs)
 
 
-class TransactionRequestAPIView(APIView):
+# Zibal Payment
+class ZibalTransactionRequestAPIView(APIView):
     @staticmethod
     def post(request):
         try:
@@ -834,10 +835,15 @@ class TransactionRequestAPIView(APIView):
             order = Order.objects.get(tracking_code=order_tracking_code)
             price_rial = order.total_price * 10
 
-            # Create Transaction
-            transaction = Transaction.objects.create(order=order, amount=price_rial, method='ZB')  # , method=payment_method_key(json_body['payment_method'])
+            if order.expired:
+                return JsonResponse({
+                    'type': 'error',
+                    'message': 'امکان پرداخت سفارش منقضی شده وجود ندارد.'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-            # TODO: decide upon payment_method received from front
+            # Create Transaction
+            transac = Transaction.objects.create(order=order, amount=price_rial, method='ZB')
+
             # Request to zibal for starting a new payment session
             zibal_response = requests.post(zibal_request_url, json={
                 "merchant": merchant_key,
@@ -854,7 +860,7 @@ class TransactionRequestAPIView(APIView):
                 zibal_trackId = str(zibal_json['trackId'])
 
                 zibal_payment = ZibalPayment(
-                    transaction=transaction,
+                    transaction=transac,
                     amount=price_rial,
                     track_id=zibal_trackId,
                 )
@@ -964,5 +970,59 @@ class ZibalPaymentCallbackAPIView(APIView):
             return Response({
                 'type': 'error',
                 'status': 'خطا از سمت سرور.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# Offline Payment
+class OfflineTransactionRequestAPIView(APIView):
+    # attachment = Base64ImageField(max_length=None, use_url=True, error_messages={
+    #                             "required": "تصویر فیش از قلم افتاده.",
+    #                             "missing": "تصویر فیش از قلم افتاده.",
+    #                             "invalid": "تصویر فیش معتبر نیست.",
+    #                             "invalid_image": "تصویر فیش معتبر نیست.",
+    #                             "empty": "فایل فیش مدل خالی است.",
+    #                             "no_name": "نام فایل تصویر فیش نامعتبر است.",
+    #                             "blank": "تصویر فیش را وارد نمایید.",
+    #                             "null": "تصویر فیش را وارد نمایید."
+    #                          })
+
+    def post(self, request):
+        try:
+            json_body = json.loads(request.body)
+
+            # Find order
+            order_tracking_code = json_body['tracking_code']
+            order = Order.objects.get(tracking_code=order_tracking_code)
+            price_rial = order.total_price * 10
+
+            if order.expired:
+                return JsonResponse({
+                    'type': 'error',
+                    'message': 'امکان پرداخت سفارش منقضی شده وجود ندارد.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create Transaction
+            transac = Transaction.objects.create(order=order, amount=price_rial, method='OF')
+
+            # Create Payment
+            offline_payment = OfflinePaymentSerializer(data={
+                "transaction": str(transac.transaction_id),
+                "amount": price_rial,
+                "attachment": json_body['attachment']
+            })
+
+            if offline_payment.is_valid(raise_exception=True):
+                offline_payment.save()
+
+                return JsonResponse({
+                    'type': 'ok',
+                    'message': 'سفارش با موفقیت ثبت شد.',
+                }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور گلدیبا.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

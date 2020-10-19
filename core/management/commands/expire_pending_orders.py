@@ -12,28 +12,48 @@ class Command(BaseCommand):
     #     parser.add_argument('poll_ids', nargs='+', type=int)
 
     def handle(self, *args, **options):
+        i = 0
         now = datetime.now()
-        offset_in_minutes = 5
+        online_offset_minutes = 1
+        offline_offset_days = 2
 
         pending_orders = Order.objects.filter(order_status='PE', expired=False)
 
         for pending_order in pending_orders:
-            # ignore recent orders
-            if pending_order.created_at >= now - timedelta(minutes=offset_in_minutes):
-                continue
+
 
             # get order transactions
-            have_successful_transaction = pending_order.transactions.filter(status='OK').exists()
+            successful_transactions = pending_order.transactions.filter(status='OK')
+            offline_pending_transactions = pending_order.transactions.filter(method='OF', status='PE')
+            online_pending_transactions = pending_order.transactions.filter(~Q(method='OF'), status='PE')
 
             # if the order is not paid, flag it as expired order and return product balances to shop
-            if not have_successful_transaction:
+            if not successful_transactions.exists():
+
+                # ignore orders having transactions from m minutes ago
+                if pending_order.created_at >= now - timedelta(minutes=online_offset_minutes):
+                    print(pending_order.tracking_code + " ignored (1).")
+                    continue
+
+                # ignore orders having pending offline transaction from n days ago
+                if offline_pending_transactions.exists():
+                    if pending_order.created_at >= now - timedelta(minutes=offline_offset_days):
+                        print(pending_order.tracking_code + " ignored (2).")
+                        continue
+
                 # access middle bridge table for ManyToMany relation to model balances
                 for orderModel in pending_order.ordermodel_set.all():
                     model = orderModel.model
                     model.in_stock += orderModel.quantity
                     model.save()
 
+                i += 1
                 pending_order.expired = True
                 pending_order.save()
+                print(pending_order.tracking_code + " expired.")
 
-        self.stdout.write(self.style.SUCCESS('Unpaid orders has been marked as expired.'))
+            elif pending_order.order_status != 'AP':
+                pending_order.order_status = 'AP'
+                pending_order.save()
+
+        self.stdout.write(self.style.SUCCESS(str(i) + ' orders has been marked as expired.'))

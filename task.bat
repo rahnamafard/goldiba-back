@@ -1,0 +1,1 @@
+"C:\Users\AmirHussein\Desktop\Goldiba Project\dev\api\venv\Scripts\python.exe" manage.py expire_pending_orders

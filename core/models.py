@@ -298,6 +298,7 @@ class Order(models.Model):
 
 # Many-to-many relation handler table
 class OrderModel(models.Model):
+    order_model_id = models.AutoField(primary_key=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     model = models.ForeignKey(Model, on_delete=models.PROTECT)
     price = models.PositiveIntegerField(verbose_name='Price', blank=False, null=False)
@@ -333,6 +334,7 @@ class Transaction(models.Model):
 
 
 class ZibalPayment(models.Model):
+    zibal_payment_id = models.AutoField(primary_key=True)
     transaction = models.ForeignKey(Transaction, related_name='zibalPayments', on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Zibal Payment Amount')
     track_id = models.CharField(max_length=32, verbose_name='Zibal trackId')
@@ -341,3 +343,13 @@ class ZibalPayment(models.Model):
 
     def __str__(self):
         return self.track_id
+
+
+class OfflinePayment(models.Model):
+    offline_payment_id = models.AutoField(primary_key=True)
+    transaction = models.ForeignKey(Transaction, related_name='offlinePayments', on_delete=models.CASCADE)
+    amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Offline Payment Amount')
+    attachment = models.ImageField(upload_to=get_upload_path_offline_payments, blank=False, null=False)
+
+    def __str__(self):
+        return str(self.offline_payment_id)
