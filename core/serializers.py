@@ -298,6 +298,11 @@ class SendMethodSerializer(serializers.ModelSerializer):
         model = SendMethod
         fields = '__all__'
 
+class TransacstionSelializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        exclude = ('order',)
+
 
 class OrderSerializer(serializers.ModelSerializer):
     cart = serializers.JSONField(write_only=True)
@@ -311,7 +316,7 @@ class OrderSerializer(serializers.ModelSerializer):
                   'phone',
                   'postal_code',
                   'postal_address',
-                  'datetime',
+                  'created_at',
                   'total_price',
                   'models',
                   'cart',  # includes models and quantities
@@ -382,6 +387,18 @@ class OrderSerializer(serializers.ModelSerializer):
         order.save()
 
         return order
+
+
+# serialize id's to object
+class OrderReturnObjectSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer()
+    send_method = SendMethodSerializer()
+    models = ModelSerializer(many=True)
+    transactions = TransacstionSelializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 
 class OfflinePaymentSerializer(serializers.ModelSerializer):

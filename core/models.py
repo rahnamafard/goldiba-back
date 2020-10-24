@@ -278,7 +278,6 @@ class Order(models.Model):
     phone = models.CharField(max_length=15, verbose_name='Receiver Phone Name')
     postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')
     postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
-    datetime = models.DateTimeField(auto_now=True)
     total_price = models.PositiveIntegerField(verbose_name='Total Price')
 
     # send method
@@ -314,10 +313,10 @@ class Transaction(models.Model):
     transaction_id = models.AutoField(primary_key=True)
     order = models.ForeignKey(Order, related_name='transactions', on_delete=models.CASCADE)
 
-    ref_number = models.CharField(max_length=32, verbose_name='Transaction Reference Number')
+    ref_number = models.CharField(max_length=32, blank=True, null=True, verbose_name='Transaction Reference Number')
     amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Transaction Amount')
-    card_number = models.CharField(max_length=32, verbose_name='Source Cart')
-    description = models.TextField(max_length=255, verbose_name='Transaction Description')
+    card_number = models.CharField(max_length=32, blank=True, null=True, verbose_name='Source Cart')
+    description = models.TextField(max_length=255, blank=True, null=True, verbose_name='Transaction Description')
     paid_at = models.DateTimeField(blank=True, null=True, verbose_name='Transaction Date/Time')
 
     STATUS_CHOICES = [('PE', 'Pending'), ('OK', 'Successful'), ('ER', 'Unsuccessful')]
@@ -328,7 +327,7 @@ class Transaction(models.Model):
 
     def __str__(self):
         s = str(self.transaction_id)
-        if self.ref_number != '':
+        if self.ref_number != '' and self.ref_number is not None:
             s += ' (REF: ' + self.ref_number + ')'
         return s
 

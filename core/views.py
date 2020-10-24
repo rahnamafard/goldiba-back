@@ -22,6 +22,7 @@ import requests
 logger = logging.getLogger(__name__)
 register_user_redis = redis.StrictRedis()
 reset_pass_redis = redis.StrictRedis()
+empty_list = [None, '', 'null']
 
 # kavenegar
 # sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
@@ -482,14 +483,13 @@ class ProductAPIView(
 
     def get_queryset(self):
         queryset = Product.objects.all()
-        empty_list = [None, '', 'null']
 
         product_id = self.request.query_params.get('id', None)
-        if not product_id in empty_list:
+        if product_id not in empty_list:
             queryset = queryset.filter(product_id=product_id)
 
         category = self.request.query_params.get('category', None)
-        if not category in empty_list:
+        if category not in empty_list:
             queryset = queryset.filter(categories__category_id__exact=category)
 
         return queryset
@@ -770,14 +770,23 @@ class OrderAPIView(
     # permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        return OrderSerializer
+        serializer_class = OrderSerializer
+
+        return_object = self.request.query_params.get('return-object', None)
+        if return_object not in empty_list:
+            if return_object == 'true':
+                serializer_class = OrderReturnObjectSerializer
+
+        return serializer_class
 
     def get_queryset(self):
-        tracking_code = self.kwargs.get('tracking_code', None)
-        if tracking_code is not None:
-            return Order.objects.filter(tracking_code=tracking_code)
-        else:
-            return Order.objects.all()
+        queryset = Order.objects.all().order_by('-created_at')
+
+        tracking_code = self.request.query_params.get('tracking-code', None)
+        if tracking_code not in empty_list:
+            queryset = queryset.filter(tracking_code=tracking_code)
+
+        return queryset
 
     # Get object by id
     def get_object(self):

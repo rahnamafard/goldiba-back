@@ -14,18 +14,17 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         i = 0
         now = datetime.now()
-        online_offset_minutes = 1
-        offline_offset_days = 2
+        online_offset_minutes = 60
+        offline_offset_days = 7
 
         pending_orders = Order.objects.filter(order_status='PE', expired=False)
 
         for pending_order in pending_orders:
 
-
             # get order transactions
             successful_transactions = pending_order.transactions.filter(status='OK')
             offline_pending_transactions = pending_order.transactions.filter(method='OF', status='PE')
-            online_pending_transactions = pending_order.transactions.filter(~Q(method='OF'), status='PE')
+            # online_pending_transactions = pending_order.transactions.filter(~Q(method='OF'), status='PE')
 
             # if the order is not paid, flag it as expired order and return product balances to shop
             if not successful_transactions.exists():
@@ -37,7 +36,7 @@ class Command(BaseCommand):
 
                 # ignore orders having pending offline transaction from n days ago
                 if offline_pending_transactions.exists():
-                    if pending_order.created_at >= now - timedelta(minutes=offline_offset_days):
+                    if pending_order.created_at >= now - timedelta(days=offline_offset_days):
                         print(pending_order.tracking_code + " ignored (2).")
                         continue
 
