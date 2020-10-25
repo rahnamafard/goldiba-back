@@ -285,7 +285,8 @@ class Order(models.Model):
     send_method_price = models.PositiveIntegerField(verbose_name='Send Method Price of Order')
 
     # expiration
-    created_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     expired = models.BooleanField(null=False, blank=False, default=False, verbose_name='Is this Order expired?')
 
     # must be final field due to name conflicts

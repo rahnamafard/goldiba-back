@@ -298,6 +298,7 @@ class SendMethodSerializer(serializers.ModelSerializer):
         model = SendMethod
         fields = '__all__'
 
+
 class TransacstionSelializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
@@ -389,11 +390,19 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
 
 
+class OrderModelSerializer(serializers.ModelSerializer):
+    model = ModelSerializer()
+
+    class Meta:
+        model = OrderModel
+        fields = '__all__'
+
+
 # serialize id's to object
 class OrderReturnObjectSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer()
     send_method = SendMethodSerializer()
-    models = ModelSerializer(many=True)
+    models = OrderModelSerializer(source='ordermodel_set', many=True)
     transactions = TransacstionSelializer(many=True)
 
     class Meta:
@@ -406,4 +415,10 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OfflinePayment
+        fields = '__all__'
+
+
+class ZibalPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ZibalPayment
         fields = '__all__'

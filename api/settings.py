@@ -76,6 +76,7 @@ USE_TZ = False
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'                         # TODO configure
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
+# DATA_UPLOAD_MAX_MEMORY_SIZE = 10240
 
 # Authentication Settings
 AUTH_USER_MODEL = 'core.User'

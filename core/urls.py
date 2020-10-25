@@ -50,4 +50,8 @@ urlpatterns = [
 
     # Offline Payment
     path('payment/request/offline/', views.OfflineTransactionRequestAPIView.as_view(), name="payment request api"),
+
+    # Payment API
+    url(r'^payment/$', views.PaymentAPIView.as_view(), name='payments api'),
+
 ]

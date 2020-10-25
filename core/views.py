@@ -984,18 +984,8 @@ class ZibalPaymentCallbackAPIView(APIView):
 
 # Offline Payment
 class OfflineTransactionRequestAPIView(APIView):
-    # attachment = Base64ImageField(max_length=None, use_url=True, error_messages={
-    #                             "required": "تصویر فیش از قلم افتاده.",
-    #                             "missing": "تصویر فیش از قلم افتاده.",
-    #                             "invalid": "تصویر فیش معتبر نیست.",
-    #                             "invalid_image": "تصویر فیش معتبر نیست.",
-    #                             "empty": "فایل فیش مدل خالی است.",
-    #                             "no_name": "نام فایل تصویر فیش نامعتبر است.",
-    #                             "blank": "تصویر فیش را وارد نمایید.",
-    #                             "null": "تصویر فیش را وارد نمایید."
-    #                          })
-
-    def post(self, request):
+    @staticmethod
+    def post(request):
         try:
             json_body = json.loads(request.body)
 
@@ -1035,3 +1025,77 @@ class OfflineTransactionRequestAPIView(APIView):
                 'status': 'خطا از سمت سرور گلدیبا.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+class PaymentAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        serializer_class = OfflinePaymentSerializer
+
+        method = self.request.query_params.get('method', None)
+        if method not in empty_list:
+            if method == 'ZB':
+                serializer_class = ZibalPaymentSerializer
+
+        return serializer_class
+
+    def get_queryset(self):
+        queryset = OfflinePayment.objects.all()
+
+        method = self.request.query_params.get('method', None)
+        if method not in empty_list:
+            if method == 'ZB':
+                queryset = ZibalPayment.objects.all()
+
+        transac = self.request.query_params.get('transaction', None)
+        if transac not in empty_list:
+            queryset = queryset.filter(transaction=transac)
+
+        return queryset
+
+    # Get object by id
+    # def get_object(self):
+    #     request = self.request
+    #     passed_id = request.GET.get('id', None) or self.passed_id
+    #     queryset = self.queryset
+    #     obj = None
+    #     if passed_id is not None:
+    #         obj = get_object_or_404(queryset, pk=passed_id)
+    #         self.check_object_permissions(request, obj)
+    #     return obj
+    #
+    # # Get object
+    # def get(self, request, *args, **kwargs):
+    #     url_passed_id = request.GET.get('id')
+    #
+    #     json_data = {}
+    #     body_ = request.body
+    #
+    #     if is_json(body_):
+    #         json_data = json.loads(request.body)
+    #
+    #     new_passed_id = json_data.get('id', None)
+    #
+    #     passed_id = url_passed_id or new_passed_id or None
+    #     # self.passed_id = passed_id
+    #
+    #     if passed_id is not None:
+    #         return self.retrieve(request, *args, **kwargs)
+    #
+    #     return super().get(request, *args, **kwargs)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
