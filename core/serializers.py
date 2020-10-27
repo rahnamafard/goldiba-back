@@ -299,7 +299,7 @@ class SendMethodSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TransacstionSelializer(serializers.ModelSerializer):
+class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         exclude = ('order',)
@@ -403,7 +403,7 @@ class OrderReturnObjectSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer()
     send_method = SendMethodSerializer()
     models = OrderModelSerializer(source='ordermodel_set', many=True)
-    transactions = TransacstionSelializer(many=True)
+    transactions = TransactionSerializer(many=True)
 
     class Meta:
         model = Order
@@ -422,3 +422,38 @@ class ZibalPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ZibalPayment
         fields = '__all__'
+
+
+class TransactionApproveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = ('status',)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        order = instance.order
+
+        if order.order_status == 'EX':
+            return JsonResponse({
+                'type': 'error',
+                'message': 'امکان تایید سفارش منقضی شده وجود ندارد.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if validated_data['status'] == 'OK':
+            order.order_status = 'AP'
+        elif validated_data['status'] == 'PE':
+            order.order_status = 'PE'
+        else:
+            order.order_status = 'EX'
+            # return quantities to store stocks
+            for orderModel in order.ordermodel_set.all():
+                model = orderModel.model
+                model.in_stock += orderModel.quantity
+                model.save()
+
+        order.save()
+
+        instance.status = validated_data['status']
+        instance.save()
+
+        return instance

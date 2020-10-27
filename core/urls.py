@@ -54,4 +54,6 @@ urlpatterns = [
     # Payment API
     url(r'^payment/$', views.PaymentAPIView.as_view(), name='payments api'),
 
+    # Transaction
+    url(r'^transaction/$', views.TransactionApproveAPIView.as_view(), name='payments api'),
 ]

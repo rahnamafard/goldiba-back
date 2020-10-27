@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.shortcuts import redirect
-from django.utils import dateparse
+from django.utils import dateparse, timezone
 from rest_framework import generics, mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, IsAdminUser
@@ -844,7 +844,7 @@ class ZibalTransactionRequestAPIView(APIView):
             order = Order.objects.get(tracking_code=order_tracking_code)
             price_rial = order.total_price * 10
 
-            if order.expired:
+            if order.order_status == 'EX':
                 return JsonResponse({
                     'type': 'error',
                     'message': 'امکان پرداخت سفارش منقضی شده وجود ندارد.'
@@ -994,14 +994,14 @@ class OfflineTransactionRequestAPIView(APIView):
             order = Order.objects.get(tracking_code=order_tracking_code)
             price_rial = order.total_price * 10
 
-            if order.expired:
+            if order.order_status == 'EX':
                 return JsonResponse({
                     'type': 'error',
                     'message': 'امکان پرداخت سفارش منقضی شده وجود ندارد.'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # Create Transaction
-            transac = Transaction.objects.create(order=order, amount=price_rial, method='OF')
+            transac = Transaction.objects.create(order=order, amount=price_rial, method='OF', datetime=timezone.now())
 
             # Create Payment
             offline_payment = OfflinePaymentSerializer(data={
@@ -1057,37 +1057,6 @@ class PaymentAPIView(
 
         return queryset
 
-    # Get object by id
-    # def get_object(self):
-    #     request = self.request
-    #     passed_id = request.GET.get('id', None) or self.passed_id
-    #     queryset = self.queryset
-    #     obj = None
-    #     if passed_id is not None:
-    #         obj = get_object_or_404(queryset, pk=passed_id)
-    #         self.check_object_permissions(request, obj)
-    #     return obj
-    #
-    # # Get object
-    # def get(self, request, *args, **kwargs):
-    #     url_passed_id = request.GET.get('id')
-    #
-    #     json_data = {}
-    #     body_ = request.body
-    #
-    #     if is_json(body_):
-    #         json_data = json.loads(request.body)
-    #
-    #     new_passed_id = json_data.get('id', None)
-    #
-    #     passed_id = url_passed_id or new_passed_id or None
-    #     # self.passed_id = passed_id
-    #
-    #     if passed_id is not None:
-    #         return self.retrieve(request, *args, **kwargs)
-    #
-    #     return super().get(request, *args, **kwargs)
-
     # create a new object
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
@@ -1099,3 +1068,26 @@ class PaymentAPIView(
     # delete an existing object
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class TransactionApproveAPIView(
+    mixins.UpdateModelMixin, generics.ListAPIView
+):
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        serializer_class = TransactionApproveSerializer
+        return serializer_class
+
+    def get_queryset(self):
+        queryset = Transaction.objects.all()
+        return queryset
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.request.query_params.get('id', None)
+        return self.get_queryset().get(pk=passed_id)
+
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)

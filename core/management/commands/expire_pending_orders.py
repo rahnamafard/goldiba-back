@@ -15,9 +15,9 @@ class Command(BaseCommand):
         i = 0
         now = datetime.now()
         online_offset_minutes = 60
-        offline_offset_days = 7
+        offline_offset_days = 1
 
-        pending_orders = Order.objects.filter(order_status='PE', expired=False)
+        pending_orders = Order.objects.filter(order_status='PE')
 
         for pending_order in pending_orders:
 
@@ -47,7 +47,7 @@ class Command(BaseCommand):
                     model.save()
 
                 i += 1
-                pending_order.expired = True
+                pending_order.order_status = 'EX'
                 pending_order.save()
                 print(pending_order.tracking_code + " expired.")
 

@@ -265,6 +265,7 @@ class Order(models.Model):
     ORDER_STATUS_CHOICES = [
         ('PE', 'Pending'),
         ('AP', 'Approved'),
+        ('EX', 'Expired')
     ]
     order_status = models.CharField(
         max_length=2,
@@ -287,7 +288,7 @@ class Order(models.Model):
     # expiration
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    expired = models.BooleanField(null=False, blank=False, default=False, verbose_name='Is this Order expired?')
+    # expired = models.BooleanField(null=False, blank=False, default=False, verbose_name='Is this Order expired?')
 
     # must be final field due to name conflicts
     models = models.ManyToManyField('Model', related_name='orders', through='OrderModel')
