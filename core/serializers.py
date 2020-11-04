@@ -117,6 +117,12 @@ class ColorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+
 class CategoryBase64Serializer(serializers.ModelSerializer):
     cover = Base64ImageField(max_length=None,
                              use_url=True,
@@ -291,6 +297,15 @@ class ProductSerializer(serializers.ModelSerializer):
         product.categories.set(categories_validated_data)
 
         return product
+
+
+class ProductReturnObjectSerializer(serializers.ModelSerializer):
+    models = ModelSerializer(many=True)
+    categories = CategorySerializer(many=True)
+
+    class Meta:
+        model = Product
+        fields = '__all__'
 
 
 class SendMethodSerializer(serializers.ModelSerializer):

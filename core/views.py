@@ -1,4 +1,6 @@
-from datetime import datetime
+from datetime import *
+
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.utils import dateparse, timezone
 from rest_framework import generics, mixins
@@ -473,7 +475,14 @@ class ProductAPIView(
 
     # Change serializer upon request method -> (self.request.method == "GET")
     def get_serializer_class(self):
-        return ProductSerializer
+        serializer_class = ProductSerializer
+
+        return_object = self.request.query_params.get('return-object', None)
+        if return_object not in empty_list:
+            if return_object == 'true':
+                serializer_class = ProductReturnObjectSerializer
+
+        return serializer_class
 
     def get_permissions(self):
         permission_classes = []
@@ -488,9 +497,40 @@ class ProductAPIView(
         if product_id not in empty_list:
             queryset = queryset.filter(product_id=product_id)
 
+        title = self.request.query_params.get('title', None)
+        if title not in empty_list:
+            queryset = queryset.filter(title__contains=title)
+
+        code = self.request.query_params.get('code', None)
+        if code not in empty_list:
+            queryset = queryset.filter(code__contains=code)
+
+        start_date = self.request.query_params.get('start-date', None)
+        if start_date not in empty_list:
+            queryset = queryset.filter(Q(created_at__gte=start_date) | Q(updated_at__gte=start_date))
+
+        end_date = self.request.query_params.get('end-date', None)
+        if end_date not in empty_list:
+            end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
+            actual_end_date = end_date_parsed + timedelta(days=1)
+            queryset = queryset.filter(Q(created_at__lte=actual_end_date) | Q(updated_at__lte=actual_end_date))
+
         category = self.request.query_params.get('category', None)
         if category not in empty_list:
             queryset = queryset.filter(categories__category_id__exact=category)
+
+        categories = self.request.query_params.get('categories', None)
+        if categories not in empty_list:
+            category_ids = categories.split(',')
+            # Turn list of values into list of Q objects
+            queries = [Q(categories__category_id=category_id) for category_id in category_ids]
+            # Take one Q object from the list
+            query = queries.pop()
+            # Or the Q object with the ones remaining in the list
+            for item in queries:
+                query |= item
+            # Query the model
+            queryset = queryset.filter(query).distinct()
 
         return queryset
 
@@ -782,9 +822,40 @@ class OrderAPIView(
     def get_queryset(self):
         queryset = Order.objects.all().order_by('-created_at')
 
+        name = self.request.query_params.get('name', None)
+        if name not in empty_list:
+            queryset = queryset.filter(Q(user__first_name__contains=name) | Q(user__last_name__contains=name))
+
+        mobile = self.request.query_params.get('mobile', None)
+        if mobile not in empty_list:
+            queryset = queryset.filter(user__mobile__contains=mobile)
+
+        phone = self.request.query_params.get('phone', None)
+        if phone not in empty_list:
+            queryset = queryset.filter(phone__contains=phone)
+
+        order_status = self.request.query_params.get('order-status', None)
+        if order_status not in empty_list:
+            queryset = queryset.filter(order_status=order_status)
+
+        # must be change for future when we have multiple transactions for an order
+        transaction_method = self.request.query_params.get('transaction-method', None)
+        if transaction_method not in empty_list:
+            queryset = queryset.filter(transactions__method=transaction_method)
+
         tracking_code = self.request.query_params.get('tracking-code', None)
         if tracking_code not in empty_list:
-            queryset = queryset.filter(tracking_code=tracking_code)
+            queryset = queryset.filter(tracking_code__contains=tracking_code)
+
+        start_date = self.request.query_params.get('start-date', None)
+        if start_date not in empty_list:
+            queryset = queryset.filter(created_at__gte=start_date)
+
+        end_date = self.request.query_params.get('end-date', None)
+        if end_date not in empty_list:
+            end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
+            actual_end_date = end_date_parsed + timedelta(days=1)
+            queryset = queryset.filter(created_at__lte=actual_end_date)
 
         return queryset
 

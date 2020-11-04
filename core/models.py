@@ -152,6 +152,8 @@ class Category(models.Model):
 
 class Product(models.Model):
     product_id = models.AutoField(primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     title = models.CharField(max_length=255, verbose_name='Title', blank=False, null=False)
     description = models.TextField(blank=True, null=True)
