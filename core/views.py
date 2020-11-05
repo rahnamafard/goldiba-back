@@ -17,13 +17,15 @@ from core.serializers import *
 from . import serializers
 
 import logging
+import os
 import secrets
 import redis
 import requests
 
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 logger = logging.getLogger(__name__)
-register_user_redis = redis.StrictRedis()
-reset_pass_redis = redis.StrictRedis()
+register_user_redis = redis.StrictRedis(host=REDIS_HOST)
+reset_pass_redis = redis.StrictRedis(host=REDIS_HOST)
 empty_list = [None, '', 'null']
 
 # kavenegar
