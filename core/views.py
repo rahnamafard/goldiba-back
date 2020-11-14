@@ -30,7 +30,7 @@ empty_list = [None, '', 'null']
 
 # kavenegar
 # sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
-sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D' # nourifatemeh441@gmail.com
+sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D'  # nourifatemeh441@gmail.com
 sms_api_url = "https://api.kavenegar.com/v1/{}/verify/lookup.json".format(sms_api_key)
 
 # zibal
@@ -66,8 +66,7 @@ class RequestVerificationCodeAPIView(APIView):
 
             # Send Verification Code Via SMS for User
             sms_response = requests.get(sms_api_url, {
-                "receptor": "09303267032",
-                # "receptor": mobile,
+                "receptor": mobile,
                 "token": verify_key,
                 "template": "goldibaverify",
             })
@@ -86,7 +85,7 @@ class RequestVerificationCodeAPIView(APIView):
                         logger.error(e)
                         return Response({
                             'type': 'error',
-                            'status': 'برخی منابع سرور در دسترس نیست.'
+                            'message': 'برخی منابع سرور در دسترس نیست.'
                         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 # Response Status is not 200
@@ -113,7 +112,7 @@ class RequestVerificationCodeAPIView(APIView):
             logger.error(e)
             return Response({
                 'type': 'error',
-                'status': 'خطا از سمت سرور.'
+                'message': 'خطا از سمت سرور.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -536,36 +535,10 @@ class ProductAPIView(
 
         return queryset
 
-    # Get object by id
-    # def get_object(self):
-    #     request = self.request
-    #     passed_id = request.GET.get('id', None) or self.passed_id
-    #     queryset = self.queryset
-    #     obj = None
-    #     if passed_id is not None:
-    #         obj = get_object_or_404(queryset, pk=passed_id)
-    #         self.check_object_permissions(request, obj)
-    #     return obj
-
-    # Get object
-    # def get(self, request, *args, **kwargs):
-    #     url_passed_id = request.GET.get('id')
-    #
-    #     json_data = {}
-    #     body_ = request.body
-    #
-    #     if is_json(body_):
-    #         json_data = json.loads(request.body)
-    #
-    #     new_passed_id = json_data.get('id', None)
-    #
-    #     passed_id = url_passed_id or new_passed_id or None
-    #     # self.passed_id = passed_id
-    #
-    #     if passed_id is not None:
-    #         return self.retrieve(request, *args, **kwargs)
-    #
-    #     return super().get(request, *args, **kwargs)
+    # required for patching
+    def get_object(self):
+        passed_id = self.request.query_params.get('id', None)
+        return Product.objects.get(product_id=passed_id)
 
     # create a new object
     def post(self, request, *args, **kwargs):
@@ -573,7 +546,7 @@ class ProductAPIView(
 
     # update an existing object
     def patch(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        return self.partial_update(request, *args, **kwargs)
 
     # delete an existing object
     def delete(self, request, *args, **kwargs):
@@ -1074,7 +1047,7 @@ class OfflineTransactionRequestAPIView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # Create Transaction
-            transac = Transaction.objects.create(order=order, amount=price_rial, method='OF', datetime=timezone.now())
+            transac = Transaction.objects.create(order=order, amount=price_rial, method='OF', paid_at=timezone.now())
 
             # Create Payment
             offline_payment = OfflinePaymentSerializer(data={

@@ -221,8 +221,10 @@ class ModelSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     models = ModelSerializer(many=True)
     categories = serializers.PrimaryKeyRelatedField(many=True, queryset=Category.objects.all())
+    models_update = serializers.JSONField(write_only=True, allow_null=True)
 
     main_image_errors = {
+        "null": 'تصویر اصلی از قلم افتاده',
         "invalid": "تصویر اصلی معتبر نیست.",
         "invalid_image": "تصویر اصلی معتبر نیست.",
         "required": "تصویر اصلی از قلم افتاده.",
@@ -231,6 +233,7 @@ class ProductSerializer(serializers.ModelSerializer):
         "no_name": "نام تصویر اصلی نامعتبر است.",
     }
     second_image_errors = {
+        "null": "تصویر دوم از قلم افتاده.",
         "invalid": "تصویر دوم معتبر نیست.",
         "invalid_image": "تصویر دوم معتبر نیست.",
         "required": "تصویر دوم از قلم افتاده.",
@@ -239,6 +242,7 @@ class ProductSerializer(serializers.ModelSerializer):
         "no_name": "نام تصویر دوم نامعتبر است.",
     }
     size_image_errors = {
+        "null": "تصویر راهنما از قلم افتاده.",
         "invalid": "تصویر راهنما معتبر نیست.",
         "invalid_image": "تصویر راهنما معتبر نیست.",
         "required": "تصویر راهنما از قلم افتاده.",
@@ -274,7 +278,7 @@ class ProductSerializer(serializers.ModelSerializer):
             # 'gifts',
         )
 
-    # at least 1 model requried
+    # at least 1 model required
     def validate_models(self, attrs):
         if len(attrs) == 0:
             raise serializers.ValidationError('حداقل یک مدل برای تعریف محصول لازم است.')
@@ -283,6 +287,7 @@ class ProductSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         models_validated_data = validated_data.pop('models')
+        models_update_validated_data = validated_data.pop('models_update')
         categories_validated_data = validated_data.pop('categories')
 
         product = Product.objects.create(**validated_data)
@@ -297,6 +302,24 @@ class ProductSerializer(serializers.ModelSerializer):
         product.categories.set(categories_validated_data)
 
         return product
+
+    def update(self, instance, validated_data):
+        models_validated_data = validated_data.pop('models_update')
+
+        # models
+        for model_item in models_validated_data:
+            if 'model_id' in model_item:
+                model = Model.objects.get(model_id=model_item['model_id'])
+                model_serializer = ModelSerializer(model, data=model_item, partial=True)
+                if model_serializer.is_valid(raise_exception=True):
+                    model_serializer.save()
+            else:
+                model_item['product'] = instance
+                model_serializer = ModelSerializer(data=model_item)
+                model_serializer.create(model_item)
+
+        instance = super(ProductSerializer, self).update(instance, validated_data)
+        return instance
 
 
 class ProductReturnObjectSerializer(serializers.ModelSerializer):
