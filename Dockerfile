@@ -7,13 +7,13 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
 # copy source and install dependencies
-RUN mkdir -p /opt/goldiba-back
-RUN mkdir -p /opt/goldiba-back/pip_cache
-COPY requirements.txt start-server.sh /opt/goldiba-back
-COPY . /opt/goldiba-back
-WORKDIR /opt/goldiba-back
+RUN mkdir -p /opt/goldiba-back/
+RUN mkdir -p /opt/goldiba-back/pip_cache/
+COPY requirements.txt start-server.sh /opt/goldiba-back/
+COPY . /opt/goldiba-back/
+WORKDIR /opt/goldiba-back/
 RUN pip install -r requirements.txt
-RUN chown -R www-data:www-data /opt/goldiba-back
+RUN chown -R www-data:www-data /opt/goldiba-back/
 RUN chmod +rwx db.sqlite3
 
 # start server
