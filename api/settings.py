@@ -3,6 +3,7 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 
 
+# BASE_DIR = '/'
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = 'yji4pd3+2tu*1@m+$)h*^e+_!ub^b90220o#tv1%vjih#vq5)&'
@@ -74,8 +75,10 @@ USE_L10N = False
 USE_TZ = False
 
 STATIC_URL = '/static/'
-MEDIA_URL = '/media/'                         # TODO configure
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
+MEDIA_URL = 'http://135.181.168.71:8000/' # TODO configure
+MEDIA_ROOT = '/'
+STATIC_ROOT = '/static'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
 # DATA_UPLOAD_MAX_MEMORY_SIZE = 10240
 
 # Authentication Settings

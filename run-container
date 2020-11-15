@@ -1,0 +1,2 @@
+docker build -t goldiba-back .
+docker run -d -p 8000:8020 -v /opt/db/db.sqlite3:/opt/app/goldiba/db.sqlite3:rw -v /var/lib/media:/media:rw -e REDIS_HOST=redis --name goldiba-back --link redis:redis goldiba-back

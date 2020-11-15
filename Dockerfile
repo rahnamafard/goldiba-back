@@ -13,7 +13,8 @@ COPY requirements.txt start-server.sh /opt/app/
 COPY . /opt/app/goldiba
 WORKDIR /opt/app
 RUN pip install -r requirements.txt
-RUN chown -R www-data:www-data /opt/app
+RUN chown -R www-data:www-data /opt/app && chmod +x /opt/app/start-server.sh
+RUN python goldiba/manage.py collectstatic --noinput
 
 # start server
 EXPOSE 8020
