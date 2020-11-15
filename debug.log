@@ -1,0 +1,24 @@
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:17:12,495 --> asyncio
+
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:17:28,976 --> asyncio
+
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:17:30,307 --> asyncio
+
+INFO     Watching for file changes with StatReloader
+         2020-11-05 20:17:30,898 --> django.utils.autoreload
+
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:22:17,672 --> asyncio
+
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:22:29,748 --> asyncio
+
+DEBUG    Using selector: EpollSelector
+         2020-11-05 20:22:31,076 --> asyncio
+
+INFO     Watching for file changes with StatReloader
+         2020-11-05 20:22:31,668 --> django.utils.autoreload
+
