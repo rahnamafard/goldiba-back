@@ -3,7 +3,6 @@
 # start-server.sh
 
 python manage.py migrate
-chmod +rwx db.sqlite3
 python manage.py runserver
 
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] ; then
