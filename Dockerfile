@@ -1,3 +1,4 @@
+FROM m.docker-registry.ir/python:3.6.9
 
 # install nginx
 RUN apt-get update && apt-get install nginx vim -y --no-install-recommends
@@ -13,6 +14,7 @@ COPY . /opt/goldiba-back
 WORKDIR /opt/goldiba-back
 RUN pip install -r requirements.txt
 RUN chown -R www-data:www-data /opt/goldiba-back
+RUN chmod +rwx db.sqlite3
 
 # start server
 EXPOSE 8020
