@@ -14,7 +14,6 @@ COPY . /opt/goldiba-back/
 WORKDIR /opt/goldiba-back/
 RUN pip install -r requirements.txt
 RUN chown -R www-data:www-data /opt/goldiba-back/
-RUN chmod +rwx db.sqlite3
 
 # start server
 EXPOSE 8020
