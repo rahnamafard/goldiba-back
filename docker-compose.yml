@@ -5,6 +5,10 @@ services:
     build: .
     command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     container_name: goldiba-back
+    environment:
+      - REDIS_HOST=redis
+    links:
+      - "redis"
     volumes:
       - .:/opt/goldiba/back
     ports:
