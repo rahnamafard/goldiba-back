@@ -9,7 +9,7 @@ from core.utils import *
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
-    def create_user(self, mobile, password=None, is_staff=False, is_active=True, is_admin=False):
+    def create_user(self, mobile, email=None, password=None, is_staff=False, is_superuser=False, is_active=True, is_admin=False):
         if not mobile:
             raise ValueError('Users must have a mobile number.')
 
@@ -24,7 +24,8 @@ class UserManager(BaseUserManager):
                 mobile=mobile,
             )
             user_obj.set_password(password)
-            user_obj.staff = is_staff
+            user_obj.is_superuser = is_superuser
+            user_obj.is_staff = is_staff
             user_obj.is_active = is_active
             user_obj.is_admin = is_admin
             user_obj.email_subscription = False
@@ -35,9 +36,11 @@ class UserManager(BaseUserManager):
     def create_superuser(self, mobile, password=None, email=None):
         user = self.create_user(
             mobile=mobile,
+            email=email,
             password=password,
             is_staff=True,
-            is_admin=True
+            is_admin=True,
+            is_superuser=True,
         )
         return user
 
