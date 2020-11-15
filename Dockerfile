@@ -1,21 +1,19 @@
+# The first instruction is what image we want to base our container on
+# We Use an un-official Python runtime as a parent image
 FROM m.docker-registry.ir/python:3.6.9
 
-# install nginx
-RUN apt-get update && apt-get install nginx vim -y --no-install-recommends
-COPY nginx.default /etc/nginx/sites-available/default
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
+# The enviroment variable ensures that the python output is set straight
+# to the terminal with out buffering it first
+ENV PYTHONUNBUFFERED 1
 
-# copy source and install dependencies
-RUN mkdir -p /opt/goldiba-back/
-RUN mkdir -p /opt/goldiba-back/pip_cache/
-COPY requirements.txt start-server.sh /opt/goldiba-back/
-COPY . /opt/goldiba-back/
-WORKDIR /opt/goldiba-back/
+# create root directory for our project in the container
+RUN mkdir /opt/goldiba/back
+
+# Set the working directory to /opt/goldiba/back/
+WORKDIR /opt/goldiba/back
+
+# Copy the current directory contents into the container at /opt/goldiba/back/
+ADD . /opt/goldiba/back/
+
+# Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
-RUN chown -R www-data:www-data /opt/goldiba-back/
-
-# start server
-EXPOSE 8020
-STOPSIGNAL SIGTERM
-CMD ["/opt/goldiba-back/start-server.sh", "python manage.py migrate"]
