@@ -2,8 +2,6 @@
 
 # start-server.sh
 
-(cd goldiba-back; python manage.py migrate)
-
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] ; then
     (cd goldiba-back; python manage.py createsuperuser --no-input)
 fi

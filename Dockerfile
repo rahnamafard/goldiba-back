@@ -18,4 +18,4 @@ RUN chown -R www-data:www-data /opt/goldiba-back/
 # start server
 EXPOSE 8020
 STOPSIGNAL SIGTERM
-CMD ["/opt/goldiba-back/start-server.sh"]
+CMD ["/opt/goldiba-back/start-server.sh", "python manage.py migrate"]
