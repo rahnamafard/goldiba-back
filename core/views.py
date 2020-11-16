@@ -903,7 +903,7 @@ class ZibalTransactionRequestAPIView(APIView):
             zibal_response = requests.post(zibal_request_url, json={
                 "merchant": merchant_key,
                 "amount": price_rial,
-                "callbackUrl": 'http://localhost:8000/api/payment/callback/',
+                "callbackUrl": 'http://135.181.168.71:8000/api/payment/callback/',
                 "description": "خرید از گلدیبا",
                 "orderId": order.tracking_code,
                 "mobile": order.user.mobile,
@@ -1014,7 +1014,7 @@ class ZibalPaymentCallbackAPIView(APIView):
                 zibal_payment.save()
 
             return redirect(
-                'http://localhost:3000/order/callback/?tracking='
+                'http://135.181.168.71:8080/order/callback/?tracking='
                 + payment_orderId
                 + '&success='
                 + payment_success
