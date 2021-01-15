@@ -309,10 +309,10 @@ class ProductSerializer(serializers.ModelSerializer):
         # models
         for model_item in models_validated_data:
             if 'model_id' in model_item:
-                model = Model.objects.get(model_id=model_item['model_id'])
-                model_serializer = ModelSerializer(model, data=model_item, partial=True)
-                if model_serializer.is_valid(raise_exception=True):
-                    model_serializer.save()
+                old_model = Model.objects.get(model_id=model_item['model_id'])
+                new_model = ModelSerializer(old_model, data=model_item, partial=True)
+                if new_model.is_valid(raise_exception=True):
+                    new_model.save()
             else:
                 model_item['product'] = instance
                 model_serializer = ModelSerializer(data=model_item)

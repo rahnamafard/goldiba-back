@@ -492,7 +492,7 @@ class ProductAPIView(
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):
-        queryset = Product.objects.all()
+        queryset = Product.objects.all().order_by('-created_at')
 
         product_id = self.request.query_params.get('id', None)
         if product_id not in empty_list:

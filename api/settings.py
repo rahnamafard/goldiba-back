@@ -75,10 +75,14 @@ USE_L10N = False
 USE_TZ = False
 
 STATIC_URL = '/static/'
-MEDIA_URL = 'http://135.181.168.71:8000/' # TODO configure
-MEDIA_ROOT = '/media'
-STATIC_ROOT = '/static'
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
+STATIC_ROOT = '/static/'
+
+MEDIA_URL = '/media/'  # TODO configure
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # TODO configure
+
+# MEDIA_URL = 'http://135.181.168.71:8000/'  # TODO configure
+# MEDIA_ROOT = '/media/'
+
 # DATA_UPLOAD_MAX_MEMORY_SIZE = 10240
 
 # Authentication Settings
