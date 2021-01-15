@@ -557,45 +557,29 @@ class ModelAPIView(
     mixins.CreateModelMixin, mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
 ):
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    queryset = Model.objects.all()
-    # parser_classes = [MultiPartParser]
-
     # Change serializer upon request method -> (self.request.method == "GET")
     def get_serializer_class(self):
         return ModelSerializer
 
-    # Get object by id
+    def get_permissions(self):
+        permission_classes = []
+        # if self.request.method == "POST":
+        #     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        queryset = Model.objects.all()
+
+        model_id = self.request.query_params.get('id', None)
+        if model_id not in empty_list:
+            queryset = queryset.filter(model_id=model_id)
+
+        return queryset
+
+    # required for patching
     def get_object(self):
-        request = self.request
-        passed_id = request.GET.get('id', None) or self.passed_id
-        queryset = self.queryset
-        obj = None
-        if passed_id is not None:
-            obj = get_object_or_404(queryset, pk=passed_id)
-            self.check_object_permissions(request, obj)
-        return obj
-
-    # Get object
-    def get(self, request, *args, **kwargs):
-        url_passed_id = request.GET.get('id')
-
-        json_data = {}
-        body_ = request.body
-
-        if is_json(body_):
-            json_data = json.loads(request.body)
-
-        new_passed_id = json_data.get('id', None)
-
-        passed_id = url_passed_id or new_passed_id or None
-        # self.passed_id = passed_id
-
-        if passed_id is not None:
-            return self.retrieve(request, *args, **kwargs)
-
-        return super().get(request, *args, **kwargs)
+        passed_id = self.request.query_params.get('id', None)
+        return Model.objects.get(model_id=passed_id)
 
     # create a new object
     def post(self, request, *args, **kwargs):
@@ -603,7 +587,7 @@ class ModelAPIView(
 
     # update an existing object
     def patch(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        return self.partial_update(request, *args, **kwargs)
 
     # delete an existing object
     def delete(self, request, *args, **kwargs):

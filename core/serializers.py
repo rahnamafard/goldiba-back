@@ -225,7 +225,6 @@ class ModelSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     models = ModelSerializer(many=True)
     categories = serializers.PrimaryKeyRelatedField(many=True, queryset=Category.objects.all())
-    models_update = serializers.JSONField(write_only=True, allow_null=True)
 
     main_image_errors = {
         "null": 'تصویر اصلی از قلم افتاده',
@@ -319,21 +318,6 @@ class ProductSerializer(serializers.ModelSerializer):
                     model_serializer.save()
             else:
                 Model.objects.create(product=instance, **model)
-
-        # update existing model
-            # if 'model_id' in model_item:
-            #     old_model = Model.objects.get(model_id=model_item['model_id'])
-            #     new_model = ModelSerializer(old_model, data=model_item, partial=True)
-            #     if new_model.is_valid(raise_exception=True):
-            #         new_model.save()
-            # # create new model
-            # else:
-            #     print(model_item)
-            #     model_item['product'] = instance
-            #     # if 'color' in model_item and model_item['color'] is not None:
-            #     #     model_item['color'] = Color.objects.get(color_id=model_item['color'])  # replace color pk with Color instance
-            #     model_serializer = ModelSerializer(data=model_item)
-            #     model_serializer.create(model_item)
 
         instance = super(ProductSerializer, self).update(instance, validated_data)
         return instance
