@@ -152,6 +152,8 @@ class CategoryBase64Serializer(serializers.ModelSerializer):
 
 
 class ModelSerializer(serializers.ModelSerializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
+    model_id = serializers.IntegerField(required=False)
     image = Base64ImageField(max_length=None, use_url=True, error_messages={
                                 "required": "تصویر مدل از قلم افتاده.",
                                 "missing": "تصویر مدل از قلم افتاده.",
@@ -165,9 +167,7 @@ class ModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Model
-        exclude = [
-            'product',
-        ]
+        fields = '__all__'
         extra_kwargs = {
             "title": {
                 "error_messages": {
@@ -214,6 +214,10 @@ class ModelSerializer(serializers.ModelSerializer):
         color_data = data.get("color")
         if isinstance(color_data, Color):  # if object is received
             data["color"] = color_data.pk  # change to its pk value
+
+        product_data = data.get("product")
+        if isinstance(product_data, Product):  # if object is received
+            data["product"] = product_data.pk  # change to its pk value
         obj = super(ModelSerializer, self).to_internal_value(data)
         return obj
 
@@ -287,7 +291,6 @@ class ProductSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         models_validated_data = validated_data.pop('models')
-        models_update_validated_data = validated_data.pop('models_update')
         categories_validated_data = validated_data.pop('categories')
 
         product = Product.objects.create(**validated_data)
@@ -304,19 +307,33 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
     def update(self, instance, validated_data):
-        models_validated_data = validated_data.pop('models_update')
+        posted_models = validated_data.pop('models')  # validated_data.pop('models')
 
-        # models
-        for model_item in models_validated_data:
-            if 'model_id' in model_item:
-                old_model = Model.objects.get(model_id=model_item['model_id'])
-                new_model = ModelSerializer(old_model, data=model_item, partial=True)
-                if new_model.is_valid(raise_exception=True):
-                    new_model.save()
+        for model in posted_models:
+            print(model)
+            model_id = model.get('model_id', None)
+            if model_id:
+                model_item = Model.objects.get(model_id=model_id, product=instance)
+                model_serializer = ModelSerializer(model_item, data=model, partial=True)
+                if model_serializer.is_valid(raise_exception=True):
+                    model_serializer.save()
             else:
-                model_item['product'] = instance
-                model_serializer = ModelSerializer(data=model_item)
-                model_serializer.create(model_item)
+                Model.objects.create(product=instance, **model)
+
+        # update existing model
+            # if 'model_id' in model_item:
+            #     old_model = Model.objects.get(model_id=model_item['model_id'])
+            #     new_model = ModelSerializer(old_model, data=model_item, partial=True)
+            #     if new_model.is_valid(raise_exception=True):
+            #         new_model.save()
+            # # create new model
+            # else:
+            #     print(model_item)
+            #     model_item['product'] = instance
+            #     # if 'color' in model_item and model_item['color'] is not None:
+            #     #     model_item['color'] = Color.objects.get(color_id=model_item['color'])  # replace color pk with Color instance
+            #     model_serializer = ModelSerializer(data=model_item)
+            #     model_serializer.create(model_item)
 
         instance = super(ProductSerializer, self).update(instance, validated_data)
         return instance
