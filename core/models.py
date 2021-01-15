@@ -263,6 +263,40 @@ class SendMethod(models.Model):
         return self.label
 
 
+class Province(models.Model):
+    province_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=15, verbose_name='Province Name')
+
+    def __str__(self):
+        return self.name
+
+
+class City(models.Model):
+    city_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=15, verbose_name='City Name')
+    province = models.ForeignKey(Province, related_name='cities', on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name_plural = "Cities"
+
+    def __str__(self):
+        return self.name
+
+
+# Many-to-many relation handler table
+class CitySendMethod(models.Model):
+    city_send_method_id = models.AutoField(primary_key=True)
+    city = models.ForeignKey(City, on_delete=models.CASCADE)
+    send_method = models.ForeignKey(SendMethod, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name_plural = "City Send Methods"
+        db_table = 'core_city_send_method'
+
+    def __str__(self):
+        return str(self.city) + ": " + str(self.send_method)
+
+
 class Order(models.Model):
     order_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, related_name='orders', null=True, on_delete=models.SET_NULL)  # if user deleted, order becomes null

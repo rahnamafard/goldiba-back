@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta, time
-from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Q
-
-from core.models import Order, Transaction
+from datetime import datetime, timedelta
+from django.core.management.base import BaseCommand
+from core.models import Order
 
 
 class Command(BaseCommand):
