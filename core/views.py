@@ -265,7 +265,7 @@ class VerifyResetPasswordCodeAPIView(APIView):
 
             # Check Verification key
             if reset_pass_redis.exists(mobile):
-                expected_verification_key = reset_pass_redis.get(mobile).decode("utf-8")  # byto to string
+                expected_verification_key = reset_pass_redis.get(mobile).decode("utf-8")  # byte to string
 
                 # It is not equal
                 if expected_verification_key != actual_verification_key:
@@ -727,40 +727,6 @@ class CategoryParentAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
         return self.destroy(request, *args, **kwargs)
 
 
-class SendMethodAPIView(
-    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
-):
-    def get_serializer_class(self):
-        return SendMethodSerializer
-
-    def get_permissions(self):
-        permission_classes = []
-        if self.request.method == "POST":
-            permission_classes = [IsAuthenticated, DjangoModelPermissions]
-        return [permission() for permission in permission_classes]
-
-    def get_queryset(self):
-        return SendMethod.objects.all()
-
-    # create a new object
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-    # update an existing object
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
-    # required for patching
-    def get_object(self):
-        passed_id = self.kwargs.get('id', None)
-        return Category.objects.get(pk=passed_id)
-
-    # delete an existing object
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-
 class OrderAPIView(
     mixins.CreateModelMixin, mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
@@ -1121,3 +1087,141 @@ class TransactionApproveAPIView(
 
     def patch(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
+
+
+class ProvinceAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        serializer_class = ProvinceSerializer
+        return serializer_class
+
+    def get_permissions(self):
+        permission_classes = []
+        # if self.request.method == "POST":
+        #     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        queryset = Province.objects.all().order_by('name')
+
+        province_id = self.request.query_params.get('id', None)
+        if province_id not in empty_list:
+            queryset = queryset.filter(province_id=province_id)
+
+        name = self.request.query_params.get('name', None)
+        if name not in empty_list:
+            queryset = queryset.filter(name__contains=name)
+
+        return queryset
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.request.query_params.get('id', None)
+        return Product.objects.get(province_id=passed_id)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class CityAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        serializer_class = CitySerializer
+        return serializer_class
+
+    def get_permissions(self):
+        permission_classes = []
+        # if self.request.method == "POST":
+        #     permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        queryset = City.objects.all().order_by('name')
+
+        city_id = self.request.query_params.get('id', None)
+        if city_id not in empty_list:
+            queryset = queryset.filter(city_id=city_id)
+
+        province_id = self.request.query_params.get('province_id', None)
+        if province_id not in empty_list:
+            queryset = queryset.filter(province_id=province_id)
+
+        name = self.request.query_params.get('name', None)
+        if name not in empty_list:
+            queryset = queryset.filter(name__contains=name)
+
+        return queryset
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.request.query_params.get('id', None)
+        return Product.objects.get(province_id=passed_id)
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class SendMethodAPIView(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
+):
+    def get_serializer_class(self):
+        return SendMethodSerializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.request.method == "POST":
+            permission_classes = [IsAuthenticated, DjangoModelPermissions]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        queryset = SendMethod.objects.all()
+
+        city_id = self.request.query_params.get('city_id', None)
+        if city_id not in empty_list:
+            queryset = queryset.filter(citysendmethod__city_id=city_id)
+
+        name = self.request.query_params.get('name', None)
+        if name not in empty_list:
+            queryset = queryset.filter(name__contains=name)
+
+        return queryset
+
+    # create a new object
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    # update an existing object
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.kwargs.get('id', None)
+        return Category.objects.get(pk=passed_id)
+
+    # delete an existing object
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)

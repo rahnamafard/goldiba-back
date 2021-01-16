@@ -338,6 +338,18 @@ class SendMethodSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ProvinceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Province
+        fields = '__all__'
+
+
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = '__all__'
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
@@ -346,6 +358,10 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     cart = serializers.JSONField(write_only=True)
+    # province_name = serializers.CharField(read_only=True)
+    # city_name = serializers.CharField(read_only=True)
+    # send_method_price = serializers.CharField(read_only=True)
+    # send_method_label = serializers.CharField(read_only=True)
 
     class Meta:
         model = Order
@@ -360,7 +376,13 @@ class OrderSerializer(serializers.ModelSerializer):
                   'total_price',
                   'models',
                   'cart',  # includes models and quantities
+                  'province',
+                  'city',
                   'send_method',
+                  # 'send_method_label',
+                  # 'send_method_price',
+                  # 'province_name',
+                  # 'city_name',
                   )
 
     @transaction.atomic
@@ -369,6 +391,8 @@ class OrderSerializer(serializers.ModelSerializer):
         cart = validated_data.pop('cart')
         validated_data.pop('tracking_code')  # to generate manually server-side
         send_method = validated_data.get('send_method')
+        province = validated_data.get('province')
+        city = validated_data.get('city')
 
         # Variables
         total_price = send_method.price
@@ -376,6 +400,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
         # Create order
         order = Order.objects.create(send_method_price=send_method.price,
+                                     send_method_label=send_method.label,
+                                     province_name=province.name,
+                                     city_name=city.name,
                                      **validated_data
                                      )
 
@@ -441,6 +468,8 @@ class OrderModelSerializer(serializers.ModelSerializer):
 class OrderReturnObjectSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer()
     send_method = SendMethodSerializer()
+    province = ProvinceSerializer()
+    city = CitySerializer()
     models = OrderModelSerializer(source='ordermodel_set', many=True)
     transactions = TransactionSerializer(many=True)
 

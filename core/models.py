@@ -313,15 +313,21 @@ class Order(models.Model):
     )
 
     # package_id
-
     tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code')
     phone = models.CharField(max_length=15, verbose_name='Receiver Phone Name')
     postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')
     postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
     total_price = models.PositiveIntegerField(verbose_name='Total Price')
 
+    # province & city
+    province = models.ForeignKey(Province, related_name='orders', null=True, on_delete=models.SET_NULL)
+    province_name = models.CharField(max_length=64, verbose_name='Province')
+    city = models.ForeignKey(City, related_name='orders', null=True, on_delete=models.SET_NULL)
+    city_name = models.CharField(max_length=64, verbose_name='City')
+
     # send method
     send_method = models.ForeignKey(SendMethod, related_name='orders', null=True, on_delete=models.SET_NULL)
+    send_method_label = models.CharField(max_length=64, verbose_name='Send Method')
     send_method_price = models.PositiveIntegerField(verbose_name='Send Method Price of Order')
 
     # expiration

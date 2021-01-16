@@ -42,6 +42,8 @@ urlpatterns = [
 
     # Order
     url(r'^order/$', views.OrderAPIView.as_view(), name='order api get by tracking code'),
+    path('province/', views.ProvinceAPIView.as_view(), name="send method api"),
+    path('city/', views.CityAPIView.as_view(), name="send method api"),
     path('send-method/', views.SendMethodAPIView.as_view(), name="send method api"),
 
     # Zibal Payment
