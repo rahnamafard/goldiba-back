@@ -507,6 +507,10 @@ class ProductAPIView(
         if code not in empty_list:
             queryset = queryset.filter(code__contains=code)
 
+        query = self.request.query_params.get('query', None)
+        if query not in empty_list:
+            queryset = queryset.filter(Q(title__contains=query) | Q(code__contains=query))
+
         start_date = self.request.query_params.get('start-date', None)
         if start_date not in empty_list:
             queryset = queryset.filter(Q(created_at__gte=start_date) | Q(updated_at__gte=start_date))
