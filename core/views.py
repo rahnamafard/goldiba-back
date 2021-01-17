@@ -795,6 +795,10 @@ class OrderAPIView(
         if city not in empty_list:
             queryset = queryset.filter(city_name__contains=city)
 
+        user = self.request.query_params.get('user', None)
+        if user not in empty_list:
+            queryset = queryset.filter(user=user)
+
         return queryset
 
     # Get object by id
