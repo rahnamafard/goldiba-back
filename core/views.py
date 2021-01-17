@@ -38,6 +38,7 @@ zibal_request_url = 'https://gateway.zibal.ir/v1/request'  # post
 zibal_verify_url = 'https://gateway.zibal.ir/v1/verify'  # post
 merchant_key = '5f81b70318f93473c1e674c9'
 
+
 def is_json(json_data):
     try:
         real_json=json.loads(json_data)
@@ -781,6 +782,14 @@ class OrderAPIView(
             end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
             actual_end_date = end_date_parsed + timedelta(days=1)
             queryset = queryset.filter(created_at__lte=actual_end_date)
+
+        province = self.request.query_params.get('province', None)
+        if province not in empty_list:
+            queryset = queryset.filter(province_name__contains=province)
+
+        city = self.request.query_params.get('city', None)
+        if city not in empty_list:
+            queryset = queryset.filter(city_name__contains=city)
 
         return queryset
 
