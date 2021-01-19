@@ -47,11 +47,14 @@ urlpatterns = [
     path('send-method/', views.SendMethodAPIView.as_view(), name="send method api"),
 
     # Zibal Payment
-    path('payment/request/zibal/', views.ZibalTransactionRequestAPIView.as_view(), name="payment request api"),
+    path('payment/request/zibal/', views.ZibalTransactionRequestAPIView.as_view(), name="zibal payment request api"),
     url(r'^payment/callback/$', views.ZibalPaymentCallbackAPIView.as_view(), name="payment callback api"),
 
     # Offline Payment
-    path('payment/request/offline/', views.OfflineTransactionRequestAPIView.as_view(), name="payment request api"),
+    path('payment/request/offline/', views.OfflineTransactionRequestAPIView.as_view(), name="offline payment request api"),
+
+    # Havaleh Anbar Payment
+    path('payment/request/havaleh/', views.HavalehAnbarRequestAPIView.as_view(), name="havaleh payment request api"),
 
     # Payment API
     url(r'^payment/$', views.PaymentAPIView.as_view(), name='payments api'),

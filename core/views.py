@@ -1039,6 +1039,82 @@ class OfflineTransactionRequestAPIView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# Havaleh Anbar Payment
+class HavalehAnbarRequestAPIView(APIView):
+    @staticmethod
+    def post(request):
+        try:
+            json_body = json.loads(request.body)
+
+            # Find order
+            order_tracking_code = json_body['tracking_code']
+            requested_by = json_body['requested_by']
+            order = Order.objects.get(tracking_code=order_tracking_code)
+            price_rial = order.total_price * 10
+
+            if order.order_status == 'EX':
+                return JsonResponse({
+                    'type': 'error',
+                    'message': 'امکان پرداخت سفارش منقضی شده وجود ندارد.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create Transaction
+            transac = Transaction.objects.create(order=order,
+                                                 amount=price_rial,
+                                                 method='HA',
+                                                 paid_at=timezone.now())
+
+            # Create Payment
+            havaleh_anbar_payment = HavalehAnbarSerializer(data={
+                "transaction": str(transac.transaction_id),
+                "amount": price_rial,
+                "requested_by": requested_by,
+            })
+
+            if havaleh_anbar_payment.is_valid(raise_exception=True):
+                havaleh_anbar_payment.save()
+
+                return JsonResponse({
+                    'type': 'ok',
+                    'message': 'سفارش با موفقیت ثبت شد.',
+                }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور گلدیبا.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @staticmethod
+    def patch(request):
+        try:
+            json_body = json.loads(request.body)
+
+            # Find order
+            havaleh_anbar_id = json_body['havaleh_anbar_id']
+            requested_by = json_body['requested_by']
+            delivered_by = json_body['delivered_by']
+
+            # Update Payment
+            havaleh_anbar_payment = HavalehAnbar.objects.get(havaleh_anbar_id=havaleh_anbar_id)
+            havaleh_anbar_payment.requested_by = requested_by
+            havaleh_anbar_payment.delivered_by = delivered_by
+            havaleh_anbar_payment.save()
+
+            return JsonResponse({
+                'type': 'ok',
+                'message': 'حواله با موفقیت ویرایش شد.',
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور گلدیبا.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class PaymentAPIView(
     mixins.CreateModelMixin, mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
@@ -1053,6 +1129,8 @@ class PaymentAPIView(
         if method not in empty_list:
             if method == 'ZB':
                 serializer_class = ZibalPaymentSerializer
+            elif method == 'HA':
+                serializer_class = HavalehAnbarSerializer
 
         return serializer_class
 
@@ -1063,6 +1141,8 @@ class PaymentAPIView(
         if method not in empty_list:
             if method == 'ZB':
                 queryset = ZibalPayment.objects.all()
+            elif method == 'HA':
+                queryset = HavalehAnbar.objects.all()
 
         transac = self.request.query_params.get('transaction', None)
         if transac not in empty_list:

@@ -14,6 +14,7 @@ class Command(BaseCommand):
         now = datetime.now()
         online_offset_minutes = 60
         offline_offset_days = 1
+        havaleh_offset_days = 1
 
         pending_orders = Order.objects.filter(order_status='PE')
 
@@ -22,20 +23,26 @@ class Command(BaseCommand):
             # get order transactions
             successful_transactions = pending_order.transactions.filter(status='OK')
             offline_pending_transactions = pending_order.transactions.filter(method='OF', status='PE')
-            # online_pending_transactions = pending_order.transactions.filter(~Q(method='OF'), status='PE')
+            havaleh_pending_transactions = pending_order.transactions.filter(method='HA', status='PE')
 
             # if the order is not paid, flag it as expired order and return product balances to shop
             if not successful_transactions.exists():
 
                 # ignore orders having transactions from m minutes ago
                 if pending_order.created_at >= now - timedelta(minutes=online_offset_minutes):
-                    print(pending_order.tracking_code + " ignored (1).")
+                    print(pending_order.tracking_code + " ignored (recent).")
                     continue
 
                 # ignore orders having pending offline transaction from n days ago
                 if offline_pending_transactions.exists():
                     if pending_order.created_at >= now - timedelta(days=offline_offset_days):
-                        print(pending_order.tracking_code + " ignored (2).")
+                        print(pending_order.tracking_code + " ignored (offline).")
+                        continue
+
+                # ignore orders having pending havaleh transaction from n days ago
+                if havaleh_pending_transactions.exists():
+                    if pending_order.created_at >= now - timedelta(days=havaleh_offset_days):
+                        print(pending_order.tracking_code + " ignored (havaleh).")
                         continue
 
                 # access middle bridge table for ManyToMany relation to model balances

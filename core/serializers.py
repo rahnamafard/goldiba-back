@@ -358,10 +358,6 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     cart = serializers.JSONField(write_only=True)
-    # province_name = serializers.CharField(read_only=True)
-    # city_name = serializers.CharField(read_only=True)
-    # send_method_price = serializers.CharField(read_only=True)
-    # send_method_label = serializers.CharField(read_only=True)
 
     class Meta:
         model = Order
@@ -379,10 +375,6 @@ class OrderSerializer(serializers.ModelSerializer):
                   'province',
                   'city',
                   'send_method',
-                  # 'send_method_label',
-                  # 'send_method_price',
-                  # 'province_name',
-                  # 'city_name',
                   )
 
     @transaction.atomic
@@ -395,14 +387,30 @@ class OrderSerializer(serializers.ModelSerializer):
         city = validated_data.get('city')
 
         # Variables
-        total_price = send_method.price
+        send_method_price = 0
+        if send_method is not None:
+            send_method_price = send_method.price
+
+        send_method_label = 'تحویل انبار'
+        if send_method is not None:
+            send_method_label = send_method.label
+
+        province_name = 'تهران'
+        if province is not None:
+            province_name = province.name
+
+        city_name = 'تهران'
+        if city is not None:
+            city_name = city.name
+
+        total_price = send_method_price
         validation_errors = []
 
         # Create order
-        order = Order.objects.create(send_method_price=send_method.price,
-                                     send_method_label=send_method.label,
-                                     province_name=province.name,
-                                     city_name=city.name,
+        order = Order.objects.create(send_method_price=send_method_price,
+                                     send_method_label=send_method_label,
+                                     province_name=province_name,
+                                     city_name=city_name,
                                      **validated_data
                                      )
 
@@ -489,6 +497,12 @@ class OfflinePaymentSerializer(serializers.ModelSerializer):
 class ZibalPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ZibalPayment
+        fields = '__all__'
+
+
+class HavalehAnbarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HavalehAnbar
         fields = '__all__'
 
 

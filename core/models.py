@@ -314,16 +314,16 @@ class Order(models.Model):
 
     # package_id
     tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code')
-    phone = models.CharField(max_length=15, verbose_name='Receiver Phone Name')
-    postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')
-    postal_address = models.TextField(max_length=255, verbose_name='Receiver Postal Address')
+    phone = models.CharField(max_length=15, blank=True, verbose_name='Receiver Phone Name')
+    postal_code = models.CharField(max_length=15, blank=True, verbose_name='Receiver Postal Code')
+    postal_address = models.TextField(max_length=255, blank=True, verbose_name='Receiver Postal Address')
     total_price = models.PositiveIntegerField(verbose_name='Total Price')
 
     # province & city
     province = models.ForeignKey(Province, related_name='orders', null=True, on_delete=models.SET_NULL)
-    province_name = models.CharField(max_length=64, verbose_name='Province')
+    province_name = models.CharField(max_length=64, blank=True,verbose_name='Province')
     city = models.ForeignKey(City, related_name='orders', null=True, on_delete=models.SET_NULL)
-    city_name = models.CharField(max_length=64, verbose_name='City')
+    city_name = models.CharField(max_length=64, blank=True, verbose_name='City')
 
     # send method
     send_method = models.ForeignKey(SendMethod, related_name='orders', null=True, on_delete=models.SET_NULL)
@@ -333,9 +333,8 @@ class Order(models.Model):
     # expiration
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # expired = models.BooleanField(null=False, blank=False, default=False, verbose_name='Is this Order expired?')
 
-    # must be final field due to name conflicts
+    # must be last field due to name conflicts
     models = models.ManyToManyField('Model', related_name='orders', through='OrderModel')
 
     def __str__(self):
@@ -369,7 +368,7 @@ class Transaction(models.Model):
     STATUS_CHOICES = [('PE', 'Pending'), ('OK', 'Successful'), ('ER', 'Unsuccessful')]
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default='PE')
 
-    METHOD_CHOICES = [('ZB', 'Zibal'), ('BM', 'Behpardakht Mellat'), ('OF', 'Offline.')]
+    METHOD_CHOICES = [('ZB', 'Zibal'), ('BM', 'Behpardakht Mellat'), ('OF', 'Offline.'), ('HA', 'Havaleh Anbar')]
     method = models.CharField(max_length=2, choices=METHOD_CHOICES, default='OF')
 
     def __str__(self):
@@ -399,3 +398,14 @@ class OfflinePayment(models.Model):
 
     def __str__(self):
         return str(self.offline_payment_id)
+
+
+class HavalehAnbar(models.Model):
+    havaleh_anbar_id = models.AutoField(primary_key=True)
+    transaction = models.ForeignKey(Transaction, related_name='havalehAnbars', on_delete=models.CASCADE)
+    amount = models.PositiveIntegerField(blank=False, null=False, verbose_name='Havaleh Anbar Amount')
+    requested_by = models.CharField(max_length=127, null=True, blank=True, verbose_name='Havaleh Requested By')
+    delivered_by = models.CharField(max_length=127, null=True, blank=True, verbose_name='Havaleh Delivered By')
+
+    def __str__(self):
+        return str(self.havaleh_anbar_id)
