@@ -752,6 +752,10 @@ class OrderAPIView(
     def get_queryset(self):
         queryset = Order.objects.all().order_by('-created_at')
 
+        order_id = self.request.query_params.get('id', None)
+        if order_id not in empty_list:
+            queryset = queryset.filter(order_id=order_id)
+
         name = self.request.query_params.get('name', None)
         if name not in empty_list:
             queryset = queryset.filter(Q(user__first_name__contains=name) | Q(user__last_name__contains=name))
@@ -801,36 +805,10 @@ class OrderAPIView(
 
         return queryset
 
-    # Get object by id
+    # required for patching
     def get_object(self):
-        request = self.request
-        passed_id = request.GET.get('id', None) or self.passed_id
-        queryset = self.queryset
-        obj = None
-        if passed_id is not None:
-            obj = get_object_or_404(queryset, pk=passed_id)
-            self.check_object_permissions(request, obj)
-        return obj
-
-    # Get object
-    def get(self, request, *args, **kwargs):
-        url_passed_id = request.GET.get('id')
-
-        json_data = {}
-        body_ = request.body
-
-        if is_json(body_):
-            json_data = json.loads(request.body)
-
-        new_passed_id = json_data.get('id', None)
-
-        passed_id = url_passed_id or new_passed_id or None
-        # self.passed_id = passed_id
-
-        if passed_id is not None:
-            return self.retrieve(request, *args, **kwargs)
-
-        return super().get(request, *args, **kwargs)
+        passed_id = self.request.query_params.get('id', None)
+        return Order.objects.get(order_id=passed_id)
 
     # create a new object
     def post(self, request, *args, **kwargs):
@@ -838,7 +816,7 @@ class OrderAPIView(
 
     # update an existing object
     def patch(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        return self.partial_update(request, *args, **kwargs)
 
     # delete an existing object
     def delete(self, request, *args, **kwargs):

@@ -485,6 +485,13 @@ class OrderReturnObjectSerializer(serializers.ModelSerializer):
         model = Order
         fields = '__all__'
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        print(validated_data)
+        instance.order_stage = validated_data['order_stage']
+        instance.save()
+        return instance
+
 
 class OfflinePaymentSerializer(serializers.ModelSerializer):
     attachment = Base64ImageField(max_length=None, use_url=True)

@@ -312,7 +312,21 @@ class Order(models.Model):
         default='PE',
     )
 
-    # package_id
+    ORDER_STAGE_CHOICES = [
+        ('SBMT', 'Submitted'),
+        ('INVC', 'Invoice Issued'),
+        ('PACK', 'Packed'),
+        ('POST', 'Sent by Post'),
+        ('CRIR', 'Sent by Courier'),
+        ('TRCK', 'Send Tracking Code Registered'),
+        ('DLVR', 'Delivered')
+    ]
+    order_stage = models.CharField(
+        max_length=4,
+        choices=ORDER_STAGE_CHOICES,
+        default='SBMT',
+    )
+
     tracking_code = models.CharField(max_length=10, verbose_name='Tracking Code')
     phone = models.CharField(max_length=15, blank=True, verbose_name='Receiver Phone Name')
     postal_code = models.CharField(max_length=15, blank=True, verbose_name='Receiver Postal Code')
@@ -329,6 +343,7 @@ class Order(models.Model):
     send_method = models.ForeignKey(SendMethod, related_name='orders', null=True, on_delete=models.SET_NULL)
     send_method_label = models.CharField(max_length=64, verbose_name='Send Method')
     send_method_price = models.PositiveIntegerField(verbose_name='Send Method Price of Order')
+    send_tracking_code = models.CharField(max_length=127, null=True, blank=True, verbose_name='Send Tracking Code')
 
     # expiration
     created_at = models.DateTimeField(auto_now_add=True)
