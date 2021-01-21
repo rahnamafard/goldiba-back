@@ -75,6 +75,8 @@ class User(AbstractUser):
     email_subscription = models.BooleanField(verbose_name='Email Newsletter', blank=True, null=True)
     sms_subscription = models.BooleanField(verbose_name='SMS Newsletter', blank=True, null=True)
 
+    updated_at = models.DateTimeField(auto_now=True)
+
     # TODO addresses (NEW many to many relation)
     # phone = models.CharField(max_length=15, verbose_name='Reciever Phone Name')
     # postal_code = models.CharField(max_length=15, verbose_name='Receiver Postal Code')

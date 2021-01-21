@@ -1,6 +1,7 @@
 from datetime import *
 
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncMonth, TruncYear
 from django.shortcuts import redirect
 from django.utils import dateparse, timezone
 from rest_framework import generics, mixins
@@ -1300,3 +1301,104 @@ class SendMethodAPIView(
     # delete an existing object
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class StatisticsAPIView(APIView):
+    @staticmethod
+    def get(req):
+        try:
+            query = req.GET.get('query', None)  # which model
+            upon = req.GET.get('upon', None)    # daily, monthly, yearly
+            start = req.GET.get('start', None)  # start-date
+            end = req.GET.get('end', None)      # end-date
+            filter = req.GET.get('filter', None)      # end-date
+
+            if query == 'orders':
+
+                if upon == "month":
+                    result = Order.objects \
+                        .annotate(period=TruncMonth('created_at')) \
+                        .values('period') \
+                        .annotate(count=Count('created_at')) \
+                        .values('period', 'count')
+                elif upon == "year":
+                    result = Order.objects \
+                        .annotate(period=TruncYear('created_at')) \
+                        .values('period') \
+                        .annotate(count=Count('created_at')) \
+                        .values('period', 'count')
+                else:
+                    result = Order.objects.extra(select={'period': 'date( created_at )'}) \
+                        .values('period') \
+                        .annotate(count=Count('created_at'))
+
+                if start is not None:
+                    result = result.filter(created_at__gte=start)
+                else:
+                    result = result.filter(created_at__gte=datetime.now() - timedelta(days=30))
+
+                if end is not None:
+                    result = result.filter(created_at__lte=end)
+                else:
+                    result = result.filter(created_at__lte=datetime.now())
+
+                if filter == 'AP':
+                    result = result.filter(order_status='AP')
+                elif filter == 'PE':
+                    result = result.filter(order_status='PE')
+                elif filter == 'EX':
+                    result = result.filter(order_status='EX')
+
+                return Response({
+                        'type': 'ok',
+                        'message': 'عملیات با موفقیت انجام شد.',
+                        'data': result
+                    }, status=status.HTTP_200_OK)
+
+            elif query == 'users':
+                if upon == "month":
+                    result = User.objects \
+                        .annotate(period=TruncMonth('date_joined')) \
+                        .values('period') \
+                        .annotate(count=Count('date_joined')) \
+                        .values('period', 'count')
+                elif upon == "year":
+                    result = User.objects \
+                        .annotate(period=TruncYear('date_joined')) \
+                        .values('period') \
+                        .annotate(count=Count('date_joined')) \
+                        .values('period', 'count')
+                else:
+                    result = User.objects.extra(select={'period': 'date( date_joined )'}) \
+                        .values('period') \
+                        .annotate(count=Count('date_joined'))
+
+                if start is not None:
+                    result = result.filter(date_joined__gte=start)
+                else:
+                    result = result.filter(date_joined__gte=datetime.now() - timedelta(days=30))
+
+                if end is not None:
+                    result = result.filter(date_joined__lte=end)
+                else:
+                    result = result.filter(date_joined__lte=datetime.now())
+
+                return Response({
+                    'type': 'ok',
+                    'message': 'عملیات با موفقیت انجام شد.',
+                    'data': result
+                }, status=status.HTTP_200_OK)
+
+            else:
+                return Response({
+                    'type': 'error',
+                    'status': 'نوع آمار نامعتبر است.'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'type': 'error',
+                'status': 'خطا از سمت سرور.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
