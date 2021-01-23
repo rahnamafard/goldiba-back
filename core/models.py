@@ -172,8 +172,10 @@ class Product(models.Model):
     second_image = models.ImageField(upload_to=get_upload_path_products, blank=True, null=True)
     size_image = models.ImageField(upload_to=get_upload_path_products, blank=True, null=True)
 
-    params = JSONField("Parameters", default={})  # Product parameters
-    relatives = JSONField("Relative Products", default={})  # Relative Products
+    is_active = models.BooleanField(verbose_name='Activation Status', blank=True, null=True, default=1)
+
+    # params = JSONField("Parameters", default={})  # Product parameters
+    # relatives = JSONField("Relative Products", default={})  # Relative Products
 
     likes = models.PositiveIntegerField(verbose_name='Product Like Count', blank=False, null=False, default=0)
 

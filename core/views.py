@@ -539,6 +539,15 @@ class ProductAPIView(
             # Query the model
             queryset = queryset.filter(query).distinct()
 
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active not in empty_list:
+            if is_active == 'false':
+                is_active = False
+                queryset = queryset.filter(is_active=is_active)
+            elif is_active == 'true':
+                is_active = True
+                queryset = queryset.filter(is_active=is_active)
+
         return queryset
 
     # required for patching
@@ -579,6 +588,10 @@ class ModelAPIView(
         model_id = self.request.query_params.get('id', None)
         if model_id not in empty_list:
             queryset = queryset.filter(model_id=model_id)
+
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active not in empty_list:
+            queryset = queryset.filter(is_active=is_active)
 
         return queryset
 

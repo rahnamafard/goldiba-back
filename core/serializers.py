@@ -285,6 +285,16 @@ class ProductSerializer(serializers.ModelSerializer):
     def validate_models(self, attrs):
         if len(attrs) == 0:
             raise serializers.ValidationError('حداقل یک مدل برای تعریف محصول لازم است.')
+
+        have_active = False
+        for attr in attrs:
+            if attr['is_active'] is True:
+                have_active = True
+                break
+
+        if not have_active:
+            raise serializers.ValidationError('حداقل یک مدل فعال برای تعریف محصول لازم است.')
+
         return attrs
 
     @transaction.atomic
@@ -309,7 +319,6 @@ class ProductSerializer(serializers.ModelSerializer):
         posted_models = validated_data.pop('models')  # validated_data.pop('models')
 
         for model in posted_models:
-            print(model)
             model_id = model.get('model_id', None)
             if model_id:
                 model_item = Model.objects.get(model_id=model_id, product=instance)
@@ -487,7 +496,6 @@ class OrderReturnObjectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        print(validated_data)
         instance.order_stage = validated_data['order_stage']
         instance.save()
         return instance
