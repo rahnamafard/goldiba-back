@@ -494,7 +494,7 @@ class ProductAPIView(
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):
-        queryset = Product.objects.all().order_by('-created_at')
+        queryset = Product.objects.all()
 
         product_id = self.request.query_params.get('id', None)
         if product_id not in empty_list:
@@ -547,6 +547,22 @@ class ProductAPIView(
             elif is_active == 'true':
                 is_active = True
                 queryset = queryset.filter(is_active=is_active)
+
+        is_recharged = self.request.query_params.get('is_recharged', None)
+        if is_recharged not in empty_list:
+            if is_recharged == 'false':
+                queryset = queryset.filter(recharged_at__isnull=True)
+            elif is_recharged == 'true':
+                queryset = queryset.filter(recharged_at__isnull=False)
+
+        limit = self.request.query_params.get('limit', None)
+        order_by = self.request.query_params.get('order-by', None)
+        if order_by not in empty_list:
+            order_params = order_by.split(',')
+            if limit not in empty_list:
+                queryset = queryset.order_by(*order_params)[:int(limit)]
+            else:
+                queryset = queryset.order_by(*order_params)
 
         return queryset
 
