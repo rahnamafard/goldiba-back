@@ -69,7 +69,7 @@ DATABASES = {
 }
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Iran'
+TIME_ZONE = 'Asia/Tehran'
 USE_I18N = False
 USE_L10N = False
 USE_TZ = False
