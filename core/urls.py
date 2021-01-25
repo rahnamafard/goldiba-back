@@ -36,9 +36,8 @@ urlpatterns = [
     # Color
     path('color/', views.ColorAPIView.as_view(), name="color api"),
 
-    # Product Category (Order of urls is important!)
-    url('^category/parent(?:/(?P<id>.+))?/$', views.CategoryParentAPIView.as_view(), name='children of parent id'),
-    url('^category(?:/(?P<id>.+))?/$', views.CategoryAPIView.as_view(), name='category api'),
+    # Product Category
+    url('^category/$', views.CategoryAPIView.as_view(), name='category api'),
 
     # Order
     url(r'^order/$', views.OrderAPIView.as_view(), name='order api get by tracking code'),

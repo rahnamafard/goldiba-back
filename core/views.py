@@ -690,47 +690,7 @@ class ColorAPIView(
         return self.destroy(request, *args, **kwargs)
 
 
-class CategoryAPIView(
-    mixins.CreateModelMixin, mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin, mixins.DestroyModelMixin, generics.ListAPIView
-):
-    queryset = Category.objects.all()
-
-    def get_serializer_class(self):
-        return CategoryBase64Serializer
-
-    def get_permissions(self):
-        permission_classes = []
-        if self.request.method == "POST":
-            permission_classes = [IsAuthenticated, DjangoModelPermissions]
-        return [permission() for permission in permission_classes]
-
-    def get_queryset(self):
-        passed_id = self.kwargs.get('id', None)
-        if passed_id is not None:
-            return Category.objects.filter(pk=passed_id)
-        else:
-            return Category.objects.all()
-
-    # create a new object
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-    # update an existing object
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
-    # required for patching
-    def get_object(self):
-        passed_id = self.kwargs.get('id', None)
-        return Category.objects.get(pk=passed_id)
-
-    # delete an existing object
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-
-class CategoryParentAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+class CategoryAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
                             mixins.UpdateModelMixin,  mixins.DestroyModelMixin, generics.ListAPIView
 ):
     def get_serializer_class(self):
@@ -743,11 +703,24 @@ class CategoryParentAPIView(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):
-        passed_id = self.kwargs.get('id', None)
-        if passed_id is not None:
-            return Category.objects.filter(parent=passed_id)
-        else:
-            return Category.objects.filter(parent=None)
+        queryset = Category.objects.all()
+
+        category_id = self.request.query_params.get('id', None)
+        if category_id not in empty_list:
+            queryset = queryset.filter(category_id=category_id)
+
+        parent = self.request.query_params.get('parent', None)
+        if parent not in empty_list:
+            queryset = queryset.filter(parent=parent)
+        elif parent == 'null':
+            queryset = queryset.filter(parent__isnull=True)
+
+        return queryset
+
+    # required for patching
+    def get_object(self):
+        passed_id = self.request.query_params.get('id', None)
+        return Category.objects.get(category_id=passed_id)
 
     # create a new object
     def post(self, request, *args, **kwargs):
