@@ -1,9 +1,15 @@
+
 from django.db import transaction
 from django.utils.crypto import get_random_string
 from rest_framework.exceptions import ValidationError
 
+import logging
+from kavenegar import *
+
+from api.settings import sms_api_key
 from .models import *
 
+logger = logging.getLogger(__name__)
 
 class Base64ImageField(serializers.ImageField):
     default_error_messages = {
@@ -494,9 +500,42 @@ class OrderReturnObjectSerializer(serializers.ModelSerializer):
         model = Order
         fields = '__all__'
 
+    def sms_message(self, instance):
+        msg = 'تغییر در وضعیت سفارش شما.'
+        if instance.order_stage == 'INVC':
+            msg = 'سفارش ' + instance.tracking_code + ' پردازش شد.'
+        elif instance.order_stage == 'PACK':
+            msg = 'سفارش ' + instance.tracking_code + ' بسته بندی شد و آماده ارسال است.'
+        elif instance.order_stage == 'POST':
+            msg = 'سفارش ' + instance.tracking_code + ' به پست تحویل داده شد.'
+        elif instance.order_stage == 'CRIR':
+            msg = 'سفارش ' + instance.tracking_code + ' به پیک تحویل داده شد.'
+        elif instance.order_stage == 'TRCK':
+            msg = 'کد مرسوله پستی سفارش ' + instance.tracking_code + ':\n' + instance.send_tracking_code
+        elif instance.order_stage == 'SBMT':
+            msg = 'وضعیت سفارش شما به حالت ثبت شده تغییر یافت.'
+        return msg
+
     @transaction.atomic
     def update(self, instance, validated_data):
         instance.order_stage = validated_data['order_stage']
+        instance.send_tracking_code = validated_data['send_tracking_code']
+
+        try:
+            api = KavenegarAPI(sms_api_key)
+            params = {
+                'receptor': instance.user.mobile,  # multiple mobile number, split by comma
+                'message': self.sms_message(instance) +
+                           '\n'
+                           'گلدیبا؛ حسی زیبا ❤️'
+            }
+            response = api.sms_send(params)
+            logger.log(1, response)
+        except APIException as e:
+            logger.error(e)
+        except HTTPException as e:
+            logger.error(e)
+
         instance.save()
         return instance
 

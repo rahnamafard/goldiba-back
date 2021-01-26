@@ -1,5 +1,5 @@
 from datetime import *
-
+from django.core.mail import send_mail
 from django.db.models import Q, Count
 from django.db.models.functions import TruncMonth, TruncYear
 from django.shortcuts import redirect
@@ -14,6 +14,7 @@ from django.contrib.auth import authenticate
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
+from api.settings import sms_api_url, merchant_key, zibal_request_url, zibal_verify_url
 from core.serializers import *
 from . import serializers
 
@@ -28,16 +29,6 @@ logger = logging.getLogger(__name__)
 register_user_redis = redis.StrictRedis(host=REDIS_HOST)
 reset_pass_redis = redis.StrictRedis(host=REDIS_HOST)
 empty_list = [None, '', 'null']
-
-# kavenegar
-# sms_api_key = '6E52696C5047566E49714E6973446E5847747676316648664C7579797043434E2B6C5033365978302F72513D' # arahnamafard@yahoo.com
-sms_api_key = '6369352B674A66434345645633586A70352F4674414A61347565557142424A6A6A313053456B76413030673D'  # nourifatemeh441@gmail.com
-sms_api_url = "https://api.kavenegar.com/v1/{}/verify/lookup.json".format(sms_api_key)
-
-# zibal
-zibal_request_url = 'https://gateway.zibal.ir/v1/request'  # post
-zibal_verify_url = 'https://gateway.zibal.ir/v1/verify'  # post
-merchant_key = '5f81b70318f93473c1e674c9'
 
 
 def is_json(json_data):
@@ -851,7 +842,7 @@ class ZibalTransactionRequestAPIView(APIView):
             zibal_response = requests.post(zibal_request_url, json={
                 "merchant": merchant_key,
                 "amount": price_rial,
-                "callbackUrl": 'http://135.181.168.71:8000/api/payment/callback/',
+                "callbackUrl": 'http://localhost:8000/api/payment/callback/',
                 "description": "خرید از گلدیبا",
                 "orderId": order.tracking_code,
                 "mobile": order.user.mobile,
@@ -918,7 +909,6 @@ class ZibalPaymentCallbackAPIView(APIView):
 
             # Find order
             order = Order.objects.get(tracking_code=payment_orderId)
-            print('payment success = ', 1)
             if payment_success == '1':
 
                 transac.status = 'OK'
@@ -926,6 +916,28 @@ class ZibalPaymentCallbackAPIView(APIView):
 
                 order.order_status = 'AP'
                 order.save()
+
+                # Send SMS to user
+                user = order.user
+                try:
+                    api = KavenegarAPI(sms_api_key)
+                    params = {
+                        'receptor': user.mobile,  # multiple mobile number, split by comma
+                        'message': 'سلام ' + user.first_name + ' عزیز؛'
+                                                               '\n'
+                                                               'سفارشتون ثبت شد. میتونین جزئیاتش رو از بخش سفارشات من ببینین.'
+                                                               ' حتما مراحل بعدی رو از طریق پیامک به اطلاعتون میرسونیم.'
+                                                               '\n'
+                                                               'کد پیگیری: ' + order.tracking_code +
+                                   '\n'
+                                   'گلدیبا؛ حسی زیبا ❤️'
+                    }
+                    response = api.sms_send(params)
+                    logger.log(1, response)
+                except APIException as e:
+                    logger.error(e)
+                except HTTPException as e:
+                    logger.error(e)
 
                 # send verification to zibal
                 zibal_response = requests.post(zibal_verify_url, json={
@@ -962,7 +974,7 @@ class ZibalPaymentCallbackAPIView(APIView):
                 zibal_payment.save()
 
             return redirect(
-                'http://135.181.168.71:8080/order/callback/?tracking='
+                'http://localhost:3000/order/callback/?tracking='
                 + payment_orderId
                 + '&success='
                 + payment_success
@@ -1006,6 +1018,42 @@ class OfflineTransactionRequestAPIView(APIView):
 
             if offline_payment.is_valid(raise_exception=True):
                 offline_payment.save()
+
+                # Send SMS to user
+                user = None
+                if request and hasattr(request, "user"):
+                    user = request.user
+
+                try:
+                    api = KavenegarAPI(sms_api_key)
+                    params = {
+                        'receptor': user.mobile,  # multiple mobile number, split by comma
+                        'message': 'سلام ' + user.first_name + ' عزیز؛'
+                                   '\n'
+                                   'سفارشتون ثبت شد. میتونین جزئیاتش رو از بخش سفارشات من ببینین.'
+                                   ' حتما مراحل بعدی رو از طریق پیامک به اطلاعتون میرسونیم.'
+                                   '\n'
+                                   'کد پیگیری: ' + order_tracking_code +
+                                   '\n'
+                                   'گلدیبا؛ حسی زیبا ❤️'
+                    }
+                    response = api.sms_send(params)
+                    logger.log(1, response)
+                except APIException as e:
+                    logger.error(e)
+                except HTTPException as e:
+                    logger.error(e)
+
+                # send order to backup email
+                subject = 'فاکتور | ' + str(order.created_at) + ' | ' + order.tracking_code
+                message = 'test'
+                send_mail(
+                    subject,
+                    message,
+                    'sale@goldiba.com',
+                    ['arahnamafard@yahoo.com'],
+                    fail_silently=True,
+                )
 
                 return JsonResponse({
                     'type': 'ok',
